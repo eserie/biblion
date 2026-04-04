@@ -19,17 +19,7 @@ use crate::protocol::ToolCallResult;
 use crate::server::ServerContext;
 use crate::tools::format::{format_item_summary, format_creators, html_to_text};
 
-/// Resolve a citekey to a Zotero item key.
-///
-/// Uses the DbPool's multi-source resolution:
-/// 1. `zotero.sqlite` citationKey field (99.9% coverage)
-/// 2. `better-bibtex.migrated` fallback
-fn resolve_citekey(ctx: &ServerContext, citekey: &str) -> Result<String, String> {
-    ctx.db
-        .item_key_for_citekey(citekey)
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| format!("Unknown citekey: {citekey}"))
-}
+use super::resolve_citekey;
 
 // ---------------------------------------------------------------------------
 // zotero_status

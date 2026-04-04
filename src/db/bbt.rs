@@ -28,7 +28,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use anyhow::{Context, Result};
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 
 /// Read-only connection to the BBT citekey database.
 pub struct BbtDb {
@@ -159,20 +159,7 @@ pub fn all_citekeys_from_zotero_sqlite(
     Ok(map)
 }
 
-/// Extension trait for rusqlite::OptionalExtension
-trait OptionalExt<T> {
-    fn optional(self) -> Result<Option<T>, rusqlite::Error>;
-}
-
-impl<T> OptionalExt<T> for std::result::Result<T, rusqlite::Error> {
-    fn optional(self) -> Result<Option<T>, rusqlite::Error> {
-        match self {
-            Ok(v) => Ok(Some(v)),
-            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(e),
-        }
-    }
-}
+// Uses rusqlite::OptionalExtension for .optional() on query_row results.
 
 #[cfg(test)]
 mod tests {

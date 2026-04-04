@@ -95,10 +95,6 @@ impl BbtRpcClient {
         }
     }
 
-    /// Check if BBT is reachable.
-    pub fn is_available(&self) -> bool {
-        self.call("api.ready", json!([])).is_ok()
-    }
 }
 
 #[cfg(test)]

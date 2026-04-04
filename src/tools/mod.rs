@@ -257,6 +257,18 @@ pub fn tool_catalog() -> Vec<ToolDefinition> {
     tools
 }
 
+/// Resolve a citekey to a Zotero item key.
+///
+/// Uses the DbPool's multi-source resolution:
+/// 1. `zotero.sqlite` citationKey field (99.9% coverage)
+/// 2. `better-bibtex.migrated` fallback
+pub fn resolve_citekey(ctx: &ServerContext, citekey: &str) -> Result<String, String> {
+    ctx.db
+        .item_key_for_citekey(citekey)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("Unknown citekey: {citekey}"))
+}
+
 fn tool(name: &str, description: &str, input_schema: Value) -> ToolDefinition {
     ToolDefinition {
         name: name.into(),

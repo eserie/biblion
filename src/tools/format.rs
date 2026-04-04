@@ -67,36 +67,41 @@ pub fn format_creators(creators: &[Creator]) -> String {
         .join("; ")
 }
 
-/// Strip basic HTML tags from a string (for note content).
+/// Strip HTML tags from a string and convert block elements to newlines.
 ///
-/// This is a simple regex-free implementation that handles the common
-/// Zotero note patterns: `<p>`, `<b>`, `<i>`, `<br>`, `<div>`, etc.
+/// Handles common Zotero note patterns: `<p>`, `<br>`, `<div>`, `<b>`, `<i>`.
+/// Block-level closing tags (`</p>`, `</div>`) insert newlines.
 pub fn html_to_text(html: &str) -> String {
     let mut result = String::with_capacity(html.len());
     let mut in_tag = false;
-    let mut last_was_newline = false;
+    let mut tag_buf = String::new();
 
     for ch in html.chars() {
         match ch {
             '<' => {
                 in_tag = true;
-                // Check if this is a block-level tag
-                let remaining = &html[html.len().min(result.len())..];
-                if remaining.starts_with("<p") || remaining.starts_with("<br") || remaining.starts_with("<div") {
-                    if !last_was_newline && !result.is_empty() {
+                tag_buf.clear();
+            }
+            '>' if in_tag => {
+                in_tag = false;
+                let tag = tag_buf.to_lowercase();
+                // Insert newline after block-level closing tags and <br>
+                if tag.starts_with("/p")
+                    || tag.starts_with("/div")
+                    || tag.starts_with("/h")
+                    || tag.starts_with("br")
+                {
+                    if !result.ends_with('\n') && !result.is_empty() {
                         result.push('\n');
-                        last_was_newline = true;
                     }
                 }
             }
-            '>' => {
-                in_tag = false;
+            _ if in_tag => {
+                tag_buf.push(ch);
             }
-            _ if !in_tag => {
+            _ => {
                 result.push(ch);
-                last_was_newline = ch == '\n';
             }
-            _ => {}
         }
     }
     result.trim().to_string()
@@ -179,5 +184,25 @@ mod tests {
     #[test]
     fn html_to_text_preserves_plain_text() {
         assert_eq!(html_to_text("No HTML here"), "No HTML here");
+    }
+
+    #[test]
+    fn html_to_text_inserts_newlines_between_paragraphs() {
+        let html = "<p>First paragraph</p><p>Second paragraph</p>";
+        let text = html_to_text(html);
+        assert!(text.contains("First paragraph\nSecond paragraph"), "Got: {text}");
+    }
+
+    #[test]
+    fn html_to_text_handles_br_tags() {
+        assert_eq!(html_to_text("Line one<br>Line two"), "Line one\nLine two");
+        assert_eq!(html_to_text("Line one<br/>Line two"), "Line one\nLine two");
+    }
+
+    #[test]
+    fn html_to_text_handles_divs() {
+        let html = "<div>Block one</div><div>Block two</div>";
+        let text = html_to_text(html);
+        assert!(text.contains("Block one\nBlock two"), "Got: {text}");
     }
 }

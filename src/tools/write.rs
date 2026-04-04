@@ -31,13 +31,7 @@ fn get_write_client(ctx: &ServerContext) -> Result<ZoteroWebClient, String> {
     ))
 }
 
-/// Resolve citekey to item key (same as read tools).
-fn resolve_citekey(ctx: &ServerContext, citekey: &str) -> Result<String, String> {
-    ctx.db
-        .item_key_for_citekey(citekey)
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| format!("Unknown citekey: {citekey}"))
-}
+use super::resolve_citekey;
 
 // ---------------------------------------------------------------------------
 // BibTeX / Bibliography (BBT RPC)
@@ -587,6 +581,11 @@ pub fn zotero_attach_pdf(args: &Value, ctx: &ServerContext) -> ToolCallResult {
         }
     }
 
+    // Validate item_key is alphanumeric (prevent path traversal)
+    if !item_key.chars().all(|c| c.is_ascii_alphanumeric()) {
+        return ToolCallResult::error("Invalid item_key: must be alphanumeric".into());
+    }
+
     // Download PDF to temp file
     let tmp_dir = std::env::temp_dir();
     let tmp_file = tmp_dir.join(format!("zotero-mcp-{item_key}.pdf"));
@@ -726,10 +725,10 @@ pub fn zotero_fetch_missing_pdfs(args: &Value, ctx: &ServerContext) -> ToolCallR
         }
     }
 
+    let not_found = missing.len() - resolved - attached;
+    let manual = resolved - attached;
     output.push_str(&format!(
-        "\nResolved: {resolved}, Attached: {attached}, Manual: {}, Not found: {}",
-        missing.len() - resolved,
-        missing.len() - resolved
+        "\nResolved: {resolved}, Attached: {attached}, Manual: {manual}, Not found: {not_found}"
     ));
 
     ToolCallResult::text(output)

@@ -75,7 +75,8 @@ impl Config {
         // Load .env file if present (ignore errors — it's optional)
         let _ = dotenvy::dotenv();
 
-        let home = std::env::var("HOME").unwrap_or_else(|_| "/Users/eserie".into());
+        let home = std::env::var("HOME")
+            .expect("HOME environment variable must be set");
 
         Self {
             zotero_sqlite_path: env_path(

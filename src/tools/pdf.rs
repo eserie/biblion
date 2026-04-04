@@ -25,7 +25,35 @@
 //! // result: Some(ResolvedPdf { url: "https://...", source: "openalex", downloadable: true })
 //! ```
 
+use std::sync::LazyLock;
 use regex::Regex;
+
+static ARXIV_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"arxiv\.org/(?:abs|pdf)/(\d{4}\.\d{4,5}(?:v\d+)?)").unwrap()
+});
+static PDF_HREF_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"href="(https?://[^"]+\.pdf)""#).unwrap()
+});
+static SSRN_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"href="(https?://papers\.ssrn\.com/sol3/papers\.cfm\?abstract_id=\d+)""#).unwrap()
+});
+static URL_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"https?://[^\s,)]+").unwrap()
+});
+
+/// Shared tokio runtime for PDF resolution. Created once, reused across calls.
+/// Using OnceLock avoids the overhead of creating a new runtime per call
+/// and prevents the panic hazard of nested `block_on` calls.
+static PDF_RUNTIME: std::sync::OnceLock<tokio::runtime::Runtime> = std::sync::OnceLock::new();
+
+fn pdf_runtime() -> &'static tokio::runtime::Runtime {
+    PDF_RUNTIME.get_or_init(|| {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("failed to build PDF tokio runtime")
+    })
+}
 
 /// Result of PDF URL resolution.
 #[derive(Debug, Clone)]
@@ -81,16 +109,8 @@ pub fn resolve_pdf(
         }
     }
 
-    // 2-9. Concurrent HTTP queries via tokio
-    let rt = match tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-    {
-        Ok(rt) => rt,
-        Err(_) => return None,
-    };
-
-    rt.block_on(resolve_pdf_async(doi, title))
+    // 2-9. Concurrent HTTP queries via tokio (shared runtime)
+    pdf_runtime().block_on(resolve_pdf_async(doi, title))
 }
 
 async fn resolve_pdf_async(
@@ -140,8 +160,7 @@ fn doi_to_arxiv_id(doi: &str) -> Option<String> {
 }
 
 fn url_to_arxiv_id(url: &str) -> Option<String> {
-    let re = Regex::new(r"arxiv\.org/(?:abs|pdf)/(\d{4}\.\d{4,5}(?:v\d+)?)").ok()?;
-    re.captures(url).map(|c| c[1].to_string())
+    ARXIV_RE.captures(url).map(|c| c[1].to_string())
 }
 
 // ---------------------------------------------------------------------------
@@ -242,18 +261,17 @@ async fn try_google_scholar(
     if !resp.status().is_success() { return None; }
     let html = resp.text().await.ok()?;
 
-    let re = Regex::new(r#"href="(https?://[^"]+\.pdf)""#).ok()?;
     let academic_hosts = [".edu", ".ac.uk", "research.google", "hal.science", "eprint.iacr.org"];
 
     // Prefer academic hosts
-    for cap in re.captures_iter(&html) {
+    for cap in PDF_HREF_RE.captures_iter(&html) {
         let url = &cap[1];
         if academic_hosts.iter().any(|h| url.contains(h)) {
             return Some(ResolvedPdf { url: url.into(), source: "google_scholar".into(), downloadable: true });
         }
     }
     // Fallback: any downloadable PDF
-    for cap in re.captures_iter(&html) {
+    for cap in PDF_HREF_RE.captures_iter(&html) {
         let url = &cap[1];
         if is_downloadable(url) {
             return Some(ResolvedPdf { url: url.into(), source: "google_scholar".into(), downloadable: true });
@@ -362,8 +380,7 @@ async fn try_ssrn(client: &reqwest::Client, title: Option<&str>) -> Option<Resol
     if !resp.status().is_success() { return None; }
     let html = resp.text().await.ok()?;
 
-    let re = Regex::new(r#"href="(https?://papers\.ssrn\.com/sol3/papers\.cfm\?abstract_id=\d+)""#).ok()?;
-    if let Some(cap) = re.captures(&html) {
+    if let Some(cap) = SSRN_RE.captures(&html) {
         return Some(ResolvedPdf { url: cap[1].to_string(), source: "ssrn".into(), downloadable: false });
     }
     None
@@ -406,8 +423,7 @@ async fn try_semantic_scholar(
     }
     // Disclaimer fallback
     if let Some(disclaimer) = oa.get("disclaimer").and_then(|v| v.as_str()) {
-        let re = Regex::new(r"https?://[^\s,)]+").ok()?;
-        for m in re.find_iter(disclaimer) {
+        for m in URL_RE.find_iter(disclaimer) {
             let url = m.as_str();
             if url.contains("arxiv.org/abs/") {
                 let pdf_url = url.replace("/abs/", "/pdf/");
