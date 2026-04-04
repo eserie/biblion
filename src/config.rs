@@ -40,6 +40,7 @@ use std::path::PathBuf;
 ///
 /// All paths have sensible defaults for a standard macOS Zotero installation.
 /// The API key is optional — without it, write tools return a clear error.
+#[derive(Clone)]
 pub struct Config {
     /// Path to Zotero's main SQLite database.
     pub zotero_sqlite_path: PathBuf,
@@ -93,7 +94,7 @@ impl Config {
             ),
             zotero_api_key: std::env::var("ZOTERO_API_KEY").ok().filter(|s| !s.is_empty()),
             zotero_library_id: std::env::var("ZOTERO_LIBRARY_ID")
-                .unwrap_or_else(|_| "7292316".into()),
+                .unwrap_or_default(), // Must be set for write operations
             zotero_library_type: std::env::var("ZOTERO_LIBRARY_TYPE")
                 .unwrap_or_else(|_| "user".into()),
             bbt_url: std::env::var("BBT_URL")

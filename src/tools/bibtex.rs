@@ -36,6 +36,7 @@
 use std::collections::HashMap;
 
 use crate::db::zotero::{Creator, ZoteroItem};
+use super::format::extract_year;
 
 /// Map Zotero item types to BibTeX entry types.
 fn bibtex_type(zotero_type: &str) -> &'static str {
@@ -161,8 +162,8 @@ pub fn item_to_bibtex(
     ];
 
     for (zotero_field, bibtex_field) in &field_map {
-        if let Some(value) = metadata.get(*zotero_field) {
-            if !value.is_empty() {
+        if let Some(value) = metadata.get(*zotero_field)
+            && !value.is_empty() {
                 // Don't duplicate booktitle from conferenceName if bookTitle exists
                 if *bibtex_field == "booktitle"
                     && *zotero_field == "conferenceName"
@@ -172,7 +173,6 @@ pub fn item_to_bibtex(
                 }
                 fields.push((bibtex_field.to_string(), escape_bibtex(value)));
             }
-        }
     }
 
     // Year (extract from date field)
@@ -209,22 +209,7 @@ pub fn item_to_bibtex(
     output
 }
 
-/// Extract a 4-digit year from various date formats.
-///
-/// Handles: "2024", "2024-01-15", "2024-00-00 2024", "January 2024", etc.
-fn extract_year(date: &str) -> Option<String> {
-    // Look for a 4-digit year
-    for word in date.split(|c: char| !c.is_ascii_digit()) {
-        if word.len() == 4 {
-            if let Ok(y) = word.parse::<u32>() {
-                if (1800..=2100).contains(&y) {
-                    return Some(word.to_string());
-                }
-            }
-        }
-    }
-    None
-}
+// extract_year is imported from format.rs
 
 /// Generate BibTeX for multiple items.
 pub fn items_to_bibtex(

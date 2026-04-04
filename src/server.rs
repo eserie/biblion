@@ -86,17 +86,18 @@ pub fn run_stdio(ctx: &ServerContext) -> Result<()> {
         let is_notification = request.id.is_none();
         let response = dispatch(&request, ctx);
 
-        if !is_notification {
-            if let Some(resp) = response {
+        if !is_notification
+            && let Some(resp) = response {
                 write_response(&mut writer, &resp, ctx)?;
             }
-        }
     }
 
     Ok(())
 }
 
-fn dispatch(request: &JsonRpcRequest, ctx: &ServerContext) -> Option<JsonRpcResponse> {
+/// Dispatch a JSON-RPC request to the appropriate handler.
+/// Shared between stdio and SSE transports.
+pub(crate) fn dispatch(request: &JsonRpcRequest, ctx: &ServerContext) -> Option<JsonRpcResponse> {
     match request.method.as_str() {
         "initialize" => Some(handle_initialize(request)),
         "notifications/initialized" => {

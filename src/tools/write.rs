@@ -10,7 +10,6 @@
 //! and acceptable — writes are rare in MCP usage.
 
 use serde_json::{json, Value};
-use std::path::Path;
 
 use crate::api::bbt_rpc::BbtRpcClient;
 use crate::api::zotero_web::ZoteroWebClient;
@@ -391,16 +390,14 @@ pub fn zotero_create_collection(args: &Value, ctx: &ServerContext) -> ToolCallRe
     };
 
     // Check if collection already exists (via local SQLite)
-    if let Ok(zdb) = ctx.db.zotero() {
-        if let Ok(colls) = zdb.collections() {
-            if let Some(existing) = colls.iter().find(|c| c.name == name) {
+    if let Ok(zdb) = ctx.db.zotero()
+        && let Ok(colls) = zdb.collections()
+            && let Some(existing) = colls.iter().find(|c| c.name == name) {
                 return ToolCallResult::text(format!(
                     "Collection '{}' already exists (key: {}).",
                     name, existing.key
                 ));
             }
-        }
-    }
 
     let mut coll = json!({"name": name});
     if let Some(parent_key) = args.get("parent_key").and_then(|v| v.as_str()) {
@@ -631,15 +628,12 @@ pub fn zotero_attach_pdf(args: &Value, ctx: &ServerContext) -> ToolCallResult {
     let title = args.get("title").and_then(|v| v.as_str());
 
     // Check if item already has a PDF
-    if let Ok(zdb) = ctx.db.zotero() {
-        if let Ok(Some(item)) = zdb.item_by_key(item_key) {
-            if let Ok(atts) = zdb.item_attachments(item.item_id) {
-                if atts.iter().any(|a| a.content_type == "application/pdf") {
+    if let Ok(zdb) = ctx.db.zotero()
+        && let Ok(Some(item)) = zdb.item_by_key(item_key)
+            && let Ok(atts) = zdb.item_attachments(item.item_id)
+                && atts.iter().any(|a| a.content_type == "application/pdf") {
                     return ToolCallResult::text(format!("Item {item_key} already has a PDF attachment."));
                 }
-            }
-        }
-    }
 
     // Validate item_key is alphanumeric (prevent path traversal)
     if !item_key.chars().all(|c| c.is_ascii_alphanumeric()) {

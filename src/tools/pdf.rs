@@ -90,24 +90,22 @@ pub fn resolve_pdf(
     title: Option<&str>,
 ) -> Option<ResolvedPdf> {
     // 1. arXiv — instant, no network
-    if let Some(doi) = doi {
-        if let Some(id) = doi_to_arxiv_id(doi) {
+    if let Some(doi) = doi
+        && let Some(id) = doi_to_arxiv_id(doi) {
             return Some(ResolvedPdf {
                 url: format!("https://arxiv.org/pdf/{id}.pdf"),
                 source: "arxiv".into(),
                 downloadable: true,
             });
         }
-    }
-    if let Some(url) = url {
-        if let Some(id) = url_to_arxiv_id(url) {
+    if let Some(url) = url
+        && let Some(id) = url_to_arxiv_id(url) {
             return Some(ResolvedPdf {
                 url: format!("https://arxiv.org/pdf/{id}.pdf"),
                 source: "arxiv".into(),
                 downloadable: true,
             });
         }
-    }
 
     // 2-9. Concurrent HTTP queries via tokio (shared runtime)
     pdf_runtime().block_on(resolve_pdf_async(doi, title))
@@ -198,11 +196,10 @@ async fn try_openalex(
     if let Some(url) = work.pointer("/best_oa_location/pdf_url").and_then(|v| v.as_str()) {
         return Some(ResolvedPdf { url: url.into(), source: "openalex".into(), downloadable: is_downloadable(url) });
     }
-    if let Some(url) = work.pointer("/open_access/oa_url").and_then(|v| v.as_str()) {
-        if url.ends_with(".pdf") {
+    if let Some(url) = work.pointer("/open_access/oa_url").and_then(|v| v.as_str())
+        && url.ends_with(".pdf") {
             return Some(ResolvedPdf { url: url.into(), source: "openalex".into(), downloadable: is_downloadable(url) });
         }
-    }
     for loc in work.get("locations").and_then(|v| v.as_array()).unwrap_or(&vec![]) {
         if let Some(url) = loc.get("pdf_url").and_then(|v| v.as_str()) {
             return Some(ResolvedPdf { url: url.into(), source: "openalex".into(), downloadable: is_downloadable(url) });
@@ -321,19 +318,17 @@ async fn try_crossref(client: &reqwest::Client, doi: Option<&str>) -> Option<Res
     let msg = data.get("message")?;
 
     // Check resource.primary.URL
-    if let Some(url) = msg.pointer("/resource/primary/URL").and_then(|v| v.as_str()) {
-        if url.to_lowercase().ends_with(".pdf") {
+    if let Some(url) = msg.pointer("/resource/primary/URL").and_then(|v| v.as_str())
+        && url.to_lowercase().ends_with(".pdf") {
             return Some(ResolvedPdf { url: url.into(), source: "crossref".into(), downloadable: is_downloadable(url) });
         }
-    }
     // Check link[] array
     for link in msg.get("link").and_then(|v| v.as_array()).unwrap_or(&vec![]) {
         let ct = link.get("content-type").and_then(|v| v.as_str()).unwrap_or("");
-        if ct.contains("pdf") {
-            if let Some(url) = link.get("URL").and_then(|v| v.as_str()) {
+        if ct.contains("pdf")
+            && let Some(url) = link.get("URL").and_then(|v| v.as_str()) {
                 return Some(ResolvedPdf { url: url.into(), source: "crossref".into(), downloadable: is_downloadable(url) });
             }
-        }
     }
     None
 }
@@ -354,11 +349,10 @@ async fn try_zenodo(client: &reqwest::Client, title: Option<&str>) -> Option<Res
 
     for hit in data.pointer("/hits/hits").and_then(|v| v.as_array()).unwrap_or(&vec![]) {
         for file in hit.get("files").and_then(|v| v.as_array()).unwrap_or(&vec![]) {
-            if file.get("key").and_then(|v| v.as_str()).unwrap_or("").to_lowercase().ends_with(".pdf") {
-                if let Some(url) = file.pointer("/links/self").and_then(|v| v.as_str()) {
+            if file.get("key").and_then(|v| v.as_str()).unwrap_or("").to_lowercase().ends_with(".pdf")
+                && let Some(url) = file.pointer("/links/self").and_then(|v| v.as_str()) {
                     return Some(ResolvedPdf { url: url.into(), source: "zenodo".into(), downloadable: true });
                 }
-            }
         }
     }
     None

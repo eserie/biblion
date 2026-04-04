@@ -33,6 +33,7 @@
 //! ```
 
 use crate::db::zotero::{Creator, ZoteroItem};
+use super::format::extract_year;
 use std::collections::HashMap;
 
 /// Supported native styles. Anything else falls back to BBT.
@@ -243,10 +244,8 @@ fn format_ieee(item: &ZoteroItem, metadata: &HashMap<String, String>) -> String 
         }
         conf_part.push('.');
         parts.push(conf_part);
-    } else {
-        if let Some(year) = item.date.as_ref().and_then(|d| extract_year(d)) {
-            parts.push(format!("{year}."));
-        }
+    } else if let Some(year) = item.date.as_ref().and_then(|d| extract_year(d)) {
+        parts.push(format!("{year}."));
     }
 
     // DOI
@@ -296,19 +295,7 @@ fn format_ieee_authors(creators: &[Creator]) -> String {
     }
 }
 
-/// Extract a 4-digit year from various date formats.
-fn extract_year(date: &str) -> Option<String> {
-    for word in date.split(|c: char| !c.is_ascii_digit()) {
-        if word.len() == 4 {
-            if let Ok(y) = word.parse::<u32>() {
-                if (1800..=2100).contains(&y) {
-                    return Some(word.to_string());
-                }
-            }
-        }
-    }
-    None
-}
+// extract_year is imported from format.rs
 
 #[cfg(test)]
 mod tests {

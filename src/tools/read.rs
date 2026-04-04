@@ -17,7 +17,7 @@ use std::path::PathBuf;
 
 use crate::protocol::ToolCallResult;
 use crate::server::ServerContext;
-use crate::tools::format::{format_item_summary, format_creators, html_to_text};
+use crate::tools::format::{format_item_summary, html_to_text};
 
 use super::resolve_citekey;
 
@@ -77,7 +77,7 @@ pub fn zotero_search(args: &Value, ctx: &ServerContext) -> ToolCallResult {
     for (_item_id, item_key) in &results {
         if let Ok(Some(item)) = zdb.item_by_key(item_key) {
             let citekey = ctx.db.citekey_for_item_key(item_key);
-            output.push_str("\n");
+            output.push('\n');
             output.push_str(&format_item_summary(&item, citekey.as_deref()));
             output.push_str("\n\n---\n");
         }
@@ -200,9 +200,8 @@ pub fn zotero_get_pdf_path(args: &Value, ctx: &ServerContext) -> ToolCallResult 
         .filter(|a| a.content_type == "application/pdf")
         .filter_map(|a| {
             a.path.as_ref().map(|p| {
-                if p.starts_with("storage:") {
+                if let Some(filename) = p.strip_prefix("storage:") {
                     // Resolve relative storage path
-                    let filename = &p["storage:".len()..];
                     // Zotero stores PDFs as storage/{parent_item_key}/{filename}
                     let full_path: PathBuf = [
                         ctx.config.zotero_storage_path.to_str().unwrap_or(""),
@@ -322,7 +321,7 @@ pub fn zotero_get_collection_items(args: &Value, ctx: &ServerContext) -> ToolCal
     for (_item_id, item_key) in &items {
         if let Ok(Some(item)) = zdb.item_by_key(item_key) {
             let citekey = ctx.db.citekey_for_item_key(item_key);
-            output.push_str("\n");
+            output.push('\n');
             output.push_str(&format_item_summary(&item, citekey.as_deref()));
             output.push_str("\n\n---\n");
         }
@@ -356,7 +355,7 @@ pub fn zotero_get_recent(args: &Value, ctx: &ServerContext) -> ToolCallResult {
     for (_item_id, item_key) in &items {
         if let Ok(Some(item)) = zdb.item_by_key(item_key) {
             let citekey = ctx.db.citekey_for_item_key(item_key);
-            output.push_str("\n");
+            output.push('\n');
             output.push_str(&format_item_summary(&item, citekey.as_deref()));
             output.push_str("\n\n---\n");
         }

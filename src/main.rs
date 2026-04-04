@@ -1,3 +1,7 @@
+// Allow dead code for API completeness — fields/methods used in tests or
+// reserved for future use (e.g., BbtDb::all_citekeys, ZoteroWebClient::children).
+#![allow(dead_code)]
+
 //! Zotero MCP Server — high-performance Rust implementation.
 //!
 //! # Transports

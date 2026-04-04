@@ -86,34 +86,30 @@ impl DbPool {
     /// 2. `better-bibtex.migrated` (for items not yet synced to Zotero)
     pub fn item_key_for_citekey(&self, citekey: &str) -> Result<Option<String>> {
         // Try zotero.sqlite first (most reliable)
-        if let Some(zdb) = &self.zotero {
-            if let Ok(Some(key)) = bbt::item_key_from_zotero_sqlite(&zdb.conn(), citekey) {
+        if let Some(zdb) = &self.zotero
+            && let Ok(Some(key)) = bbt::item_key_from_zotero_sqlite(zdb.conn(), citekey) {
                 return Ok(Some(key));
             }
-        }
         // Fallback to BBT migrated
-        if let Some(bdb) = &self.bbt {
-            if let Ok(Some(key)) = bdb.item_key_for_citekey(citekey) {
+        if let Some(bdb) = &self.bbt
+            && let Ok(Some(key)) = bdb.item_key_for_citekey(citekey) {
                 return Ok(Some(key));
             }
-        }
         Ok(None)
     }
 
     /// Resolve an item key to a citekey, trying all available sources.
     pub fn citekey_for_item_key(&self, item_key: &str) -> Option<String> {
         // Try zotero.sqlite first
-        if let Some(zdb) = &self.zotero {
-            if let Ok(Some(ck)) = bbt::citekey_from_zotero_sqlite(&zdb.conn(), item_key) {
+        if let Some(zdb) = &self.zotero
+            && let Ok(Some(ck)) = bbt::citekey_from_zotero_sqlite(zdb.conn(), item_key) {
                 return Some(ck);
             }
-        }
         // Fallback to BBT migrated
-        if let Some(bdb) = &self.bbt {
-            if let Ok(Some(ck)) = bdb.citekey_for_item_key(item_key) {
+        if let Some(bdb) = &self.bbt
+            && let Ok(Some(ck)) = bdb.citekey_for_item_key(item_key) {
                 return Some(ck);
             }
-        }
         None
     }
 }

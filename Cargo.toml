@@ -2,8 +2,13 @@
 name = "zotero-mcp"
 version = "0.1.0"
 edition = "2024"
-description = "High-performance Zotero MCP server — direct SQLite access, sub-millisecond reads"
+description = "High-performance MCP server that gives LLMs sub-millisecond access to your Zotero library"
 license = "MIT"
+repository = "https://github.com/eserie/zotero-mcp-rs"
+readme = "README.md"
+keywords = ["zotero", "mcp", "model-context-protocol", "sqlite", "bibliography"]
+categories = ["command-line-utilities", "database"]
+authors = ["Emmanuel Serie <emmanuel@epinoia.io>"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

@@ -86,15 +86,13 @@ pub fn html_to_text(html: &str) -> String {
                 in_tag = false;
                 let tag = tag_buf.to_lowercase();
                 // Insert newline after block-level closing tags and <br>
-                if tag.starts_with("/p")
+                if (tag.starts_with("/p")
                     || tag.starts_with("/div")
                     || tag.starts_with("/h")
-                    || tag.starts_with("br")
-                {
-                    if !result.ends_with('\n') && !result.is_empty() {
+                    || tag.starts_with("br"))
+                    && !result.ends_with('\n') && !result.is_empty() {
                         result.push('\n');
                     }
-                }
             }
             _ if in_tag => {
                 tag_buf.push(ch);
@@ -105,6 +103,21 @@ pub fn html_to_text(html: &str) -> String {
         }
     }
     result.trim().to_string()
+}
+
+/// Extract a 4-digit year from various date formats.
+///
+/// Handles: "2024", "2024-01-15", "2024-00-00 2024", "January 2024", etc.
+/// Shared by bibtex.rs and bibliography.rs.
+pub fn extract_year(date: &str) -> Option<String> {
+    for word in date.split(|c: char| !c.is_ascii_digit()) {
+        if word.len() == 4
+            && let Ok(y) = word.parse::<u32>()
+                && (1800..=2100).contains(&y) {
+                    return Some(word.to_string());
+                }
+    }
+    None
 }
 
 #[cfg(test)]

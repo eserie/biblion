@@ -31,12 +31,8 @@ use tokio_stream::StreamExt;
 
 use crate::config::Config;
 use crate::db::DbPool;
-use crate::protocol::{
-    InitializeResult, JsonRpcRequest, JsonRpcResponse, ServerCapabilities, ServerInfo,
-    ToolCallParams, ToolsCapability, ToolsListResult,
-};
+use crate::protocol::JsonRpcRequest;
 use crate::server::ServerContext;
-use crate::tools;
 
 /// Per-session state: an SSE sender channel.
 type SessionMap = Arc<RwLock<HashMap<String, mpsc::Sender<String>>>>;
@@ -85,6 +81,16 @@ async fn handle_sse(
 
     state.sessions.write().await.insert(session_id.clone(), tx.clone());
 
+    // Clean up session when client disconnects (sender channel closes)
+    let tx_cleanup = tx.clone();
+    let sessions_cleanup = state.sessions.clone();
+    let session_id_cleanup = session_id.clone();
+    tokio::spawn(async move {
+        tx_cleanup.closed().await;
+        sessions_cleanup.write().await.remove(&session_id_cleanup);
+        eprintln!("[zotero-mcp] Session disconnected: {session_id_cleanup}");
+    });
+
     eprintln!("[zotero-mcp] New SSE session: {session_id}");
 
     // Send endpoint event
@@ -93,7 +99,7 @@ async fn handle_sse(
 
     let stream = ReceiverStream::new(rx).map(move |msg| {
         if let Some(url) = msg.strip_prefix("endpoint:") {
-            Ok(Event::default().event("endpoint").data(url.to_string()))
+            Ok(Event::default().event("endpoint").data(url))
         } else {
             Ok(Event::default().event("message").data(msg))
         }
@@ -129,99 +135,23 @@ async fn handle_message(
     let is_notification = request.id.is_none();
     let config = state.config.clone();
 
-    // Process in spawn_blocking (opens fresh SQLite connections)
+    // Process in spawn_blocking (opens fresh SQLite connections per request
+    // because rusqlite::Connection is not Send+Sync)
     let response = tokio::task::spawn_blocking(move || {
-        // Open fresh DB connections for this request
         let db = DbPool::open(&config.zotero_sqlite_path, &config.bbt_migrated_path);
-        let ctx = ServerContext {
-            db,
-            config: Config {
-                zotero_sqlite_path: config.zotero_sqlite_path.clone(),
-                zotero_storage_path: config.zotero_storage_path.clone(),
-                bbt_migrated_path: config.bbt_migrated_path.clone(),
-                zotero_api_key: config.zotero_api_key.clone(),
-                zotero_library_id: config.zotero_library_id.clone(),
-                zotero_library_type: config.zotero_library_type.clone(),
-                bbt_url: config.bbt_url.clone(),
-                log_level: config.log_level,
-            },
-        };
-        dispatch(&request, &ctx)
+        let ctx = ServerContext { db, config: (*config).clone() };
+        // Reuse shared dispatch from server module
+        crate::server::dispatch(&request, &ctx)
     })
     .await;
 
-    if !is_notification {
-        if let Ok(Some(resp)) = response {
+    if !is_notification
+        && let Ok(Some(resp)) = response {
             let json = serde_json::to_string(&resp).unwrap_or_default();
             let _ = tx.send(json).await;
         }
-    }
 
     axum::http::StatusCode::ACCEPTED
-}
-
-/// Dispatch a JSON-RPC request (same logic as stdio server).
-fn dispatch(request: &JsonRpcRequest, ctx: &ServerContext) -> Option<JsonRpcResponse> {
-    match request.method.as_str() {
-        "initialize" => {
-            let result = InitializeResult {
-                protocol_version: "2024-11-05".into(),
-                capabilities: ServerCapabilities {
-                    tools: ToolsCapability {
-                        list_changed: Some(false),
-                    },
-                },
-                server_info: ServerInfo {
-                    name: "zotero-mcp".into(),
-                    version: env!("CARGO_PKG_VERSION").into(),
-                },
-            };
-            Some(JsonRpcResponse::success(
-                request.id.clone(),
-                serde_json::to_value(result).unwrap_or_default(),
-            ))
-        }
-        "notifications/initialized" => None,
-        "tools/list" => {
-            let catalog = tools::tool_catalog();
-            let result = ToolsListResult { tools: catalog };
-            Some(JsonRpcResponse::success(
-                request.id.clone(),
-                serde_json::to_value(result).unwrap_or_default(),
-            ))
-        }
-        "tools/call" => {
-            let params: ToolCallParams = match serde_json::from_value(request.params.clone()) {
-                Ok(p) => p,
-                Err(e) => {
-                    return Some(JsonRpcResponse::error(
-                        request.id.clone(),
-                        -32602,
-                        format!("Invalid params: {e}"),
-                    ))
-                }
-            };
-            let result = tools::handle_tool_call(&params.name, &params.arguments, ctx);
-            Some(JsonRpcResponse::success(
-                request.id.clone(),
-                serde_json::to_value(result).unwrap_or_default(),
-            ))
-        }
-        "ping" => Some(JsonRpcResponse::success(
-            request.id.clone(),
-            serde_json::json!({}),
-        )),
-        _ => {
-            if request.id.is_some() {
-                Some(JsonRpcResponse::method_not_found(
-                    request.id.clone(),
-                    &request.method,
-                ))
-            } else {
-                None
-            }
-        }
-    }
 }
 
 #[cfg(test)]
@@ -253,7 +183,7 @@ mod tests {
             method: "initialize".into(),
             params: serde_json::json!({}),
         };
-        let resp = dispatch(&req, &ctx).unwrap();
+        let resp = crate::server::dispatch(&req, &ctx).unwrap();
         let result = resp.result.unwrap();
         assert_eq!(result["serverInfo"]["name"], "zotero-mcp");
     }
@@ -267,7 +197,7 @@ mod tests {
             method: "ping".into(),
             params: serde_json::json!(null),
         };
-        let resp = dispatch(&req, &ctx).unwrap();
+        let resp = crate::server::dispatch(&req, &ctx).unwrap();
         assert!(resp.result.is_some());
     }
 
@@ -280,6 +210,6 @@ mod tests {
             method: "notifications/initialized".into(),
             params: serde_json::json!(null),
         };
-        assert!(dispatch(&req, &ctx).is_none());
+        assert!(crate::server::dispatch(&req, &ctx).is_none());
     }
 }
