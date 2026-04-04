@@ -20,6 +20,7 @@
 //!     bbt.migrated   Web API   concurrent
 //! ```
 
+mod api;
 mod config;
 mod db;
 mod protocol;
