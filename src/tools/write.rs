@@ -34,9 +34,13 @@ fn get_write_client(ctx: &ServerContext) -> Result<ZoteroWebClient, String> {
 use super::resolve_citekey;
 
 // ---------------------------------------------------------------------------
-// BibTeX / Bibliography (BBT RPC)
+// BibTeX / Bibliography
 // ---------------------------------------------------------------------------
 
+/// Export items as BibTeX/BibLaTeX — native implementation, no BBT needed.
+///
+/// This reads directly from SQLite and generates BibTeX in <1ms.
+/// The Python server routed this through BBT JSON-RPC (~300ms).
 pub fn zotero_get_bibtex(args: &Value, ctx: &ServerContext) -> ToolCallResult {
     let citekeys: Vec<&str> = match args.get("citekeys").and_then(|v| v.as_array()) {
         Some(arr) => arr.iter().filter_map(|v| v.as_str()).collect(),
@@ -45,18 +49,33 @@ pub fn zotero_get_bibtex(args: &Value, ctx: &ServerContext) -> ToolCallResult {
             None => return ToolCallResult::error("Missing parameter: citekeys or citekey".into()),
         },
     };
-    let format = args
-        .get("format")
-        .and_then(|v| v.as_str())
-        .unwrap_or("Better BibTeX");
+    let format = match args.get("format").and_then(|v| v.as_str()).unwrap_or("bibtex") {
+        f if f.to_lowercase().contains("biblatex") => "biblatex",
+        _ => "bibtex",
+    };
 
-    let bbt = BbtRpcClient::new(&ctx.config.bbt_url);
-    match bbt.export(&citekeys, format) {
-        Ok(result) => ToolCallResult::text(result),
-        Err(e) => ToolCallResult::error(format!(
-            "BibTeX export failed (is Zotero running?): {e}"
-        )),
+    let zdb = match ctx.db.zotero() {
+        Ok(db) => db,
+        Err(e) => return ToolCallResult::error(e.to_string()),
+    };
+
+    let mut entries = Vec::new();
+    for citekey in &citekeys {
+        let item_key = match resolve_citekey(ctx, citekey) {
+            Ok(k) => k,
+            Err(e) => return ToolCallResult::error(e),
+        };
+        let item = match zdb.item_by_key(&item_key) {
+            Ok(Some(item)) => item,
+            Ok(None) => return ToolCallResult::error(format!("Item not found: {item_key}")),
+            Err(e) => return ToolCallResult::error(e.to_string()),
+        };
+        let metadata = zdb.item_metadata(item.item_id).unwrap_or_default();
+        entries.push((item, citekey.to_string(), metadata));
     }
+
+    let result = super::bibtex::items_to_bibtex(&entries, format);
+    ToolCallResult::text(result)
 }
 
 pub fn zotero_get_bibliography(args: &Value, ctx: &ServerContext) -> ToolCallResult {
@@ -78,47 +97,49 @@ pub fn zotero_get_bibliography(args: &Value, ctx: &ServerContext) -> ToolCallRes
     }
 }
 
+/// Export a collection or item list as BibTeX/BibLaTeX — native, no BBT needed.
 pub fn zotero_export_bibtex(args: &Value, ctx: &ServerContext) -> ToolCallResult {
-    let format = args
-        .get("format")
-        .and_then(|v| v.as_str())
-        .unwrap_or("Better BibLaTeX");
+    let format = match args.get("format").and_then(|v| v.as_str()).unwrap_or("biblatex") {
+        f if f.to_lowercase().contains("biblatex") => "biblatex",
+        _ => "bibtex",
+    };
 
-    // Get citekeys from collection or explicit list
-    let citekeys: Vec<String> = if let Some(collection_key) = args.get("collection_key").and_then(|v| v.as_str()) {
-        let zdb = match ctx.db.zotero() {
-            Ok(db) => db,
-            Err(e) => return ToolCallResult::error(e.to_string()),
-        };
+    let zdb = match ctx.db.zotero() {
+        Ok(db) => db,
+        Err(e) => return ToolCallResult::error(e.to_string()),
+    };
+
+    // Get item keys from collection or explicit list
+    let item_keys: Vec<(i64, String)> = if let Some(collection_key) = args.get("collection_key").and_then(|v| v.as_str()) {
         match zdb.collection_items(collection_key, 1000) {
-            Ok(items) => items
-                .iter()
-                .filter_map(|(_, key)| ctx.db.citekey_for_item_key(key))
-                .collect(),
+            Ok(items) => items,
             Err(e) => return ToolCallResult::error(e.to_string()),
         }
     } else if let Some(keys) = args.get("item_keys").and_then(|v| v.as_array()) {
-        // item_keys are Zotero keys, need to convert to citekeys
         keys.iter()
             .filter_map(|v| v.as_str())
-            .filter_map(|key| ctx.db.citekey_for_item_key(key))
+            .filter_map(|key| zdb.item_by_key(key).ok().flatten().map(|item| (item.item_id, item.item_key)))
             .collect()
     } else {
         return ToolCallResult::error("Provide either collection_key or item_keys".into());
     };
 
-    if citekeys.is_empty() {
+    if item_keys.is_empty() {
         return ToolCallResult::text("No items found to export.".into());
     }
 
-    let ck_refs: Vec<&str> = citekeys.iter().map(|s| s.as_str()).collect();
-    let bbt = BbtRpcClient::new(&ctx.config.bbt_url);
-    match bbt.export(&ck_refs, format) {
-        Ok(result) => ToolCallResult::text(result),
-        Err(e) => ToolCallResult::error(format!(
-            "BibTeX export failed (is Zotero running?): {e}"
-        )),
+    let mut entries = Vec::new();
+    for (_item_id, item_key) in &item_keys {
+        if let Ok(Some(item)) = zdb.item_by_key(item_key) {
+            let citekey = ctx.db.citekey_for_item_key(item_key)
+                .unwrap_or_else(|| item_key.clone());
+            let metadata = zdb.item_metadata(item.item_id).unwrap_or_default();
+            entries.push((item, citekey, metadata));
+        }
     }
+
+    let result = super::bibtex::items_to_bibtex(&entries, format);
+    ToolCallResult::text(result)
 }
 
 // ---------------------------------------------------------------------------
