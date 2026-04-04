@@ -78,6 +78,18 @@ pub fn zotero_get_bibtex(args: &Value, ctx: &ServerContext) -> ToolCallResult {
     ToolCallResult::text(result)
 }
 
+/// Generate formatted bibliography — native for APA/IEEE, BBT fallback for others.
+///
+/// # Style resolution
+///
+/// 1. If style is APA or IEEE → native formatting (sub-millisecond, no Zotero needed)
+/// 2. If style is anything else → BBT JSON-RPC fallback (requires Zotero running)
+///
+/// # Reference
+///
+/// APA implementation follows: <https://apastyle.apa.org/style-grammar-guidelines/references>
+/// IEEE implementation follows: <https://ieeeauthorcenter.ieee.org/wp-content/uploads/IEEE-Reference-Guide.pdf>
+/// For verification against the reference CSL engine, compare with BBT's output.
 pub fn zotero_get_bibliography(args: &Value, ctx: &ServerContext) -> ToolCallResult {
     let citekeys: Vec<&str> = match args.get("citekeys").and_then(|v| v.as_array()) {
         Some(arr) => arr.iter().filter_map(|v| v.as_str()).collect(),
@@ -88,11 +100,38 @@ pub fn zotero_get_bibliography(args: &Value, ctx: &ServerContext) -> ToolCallRes
         .and_then(|v| v.as_str())
         .unwrap_or("http://www.zotero.org/styles/apa");
 
+    // Try native formatting for supported styles
+    if super::bibliography::is_native_style(style) {
+        let zdb = match ctx.db.zotero() {
+            Ok(db) => db,
+            Err(e) => return ToolCallResult::error(e.to_string()),
+        };
+
+        let mut items = Vec::new();
+        for citekey in &citekeys {
+            let item_key = match resolve_citekey(ctx, citekey) {
+                Ok(k) => k,
+                Err(e) => return ToolCallResult::error(e),
+            };
+            let item = match zdb.item_by_key(&item_key) {
+                Ok(Some(item)) => item,
+                Ok(None) => return ToolCallResult::error(format!("Item not found: {item_key}")),
+                Err(e) => return ToolCallResult::error(e.to_string()),
+            };
+            let metadata = zdb.item_metadata(item.item_id).unwrap_or_default();
+            items.push((item, metadata));
+        }
+
+        let result = super::bibliography::format_bibliography_list(&items, style);
+        return ToolCallResult::text(result);
+    }
+
+    // Fallback to BBT for unsupported styles (requires Zotero running)
     let bbt = BbtRpcClient::new(&ctx.config.bbt_url);
     match bbt.bibliography(&citekeys, style) {
         Ok(result) => ToolCallResult::text(result),
         Err(e) => ToolCallResult::error(format!(
-            "Bibliography generation failed (is Zotero running?): {e}"
+            "Style '{style}' not supported natively. BBT fallback failed (is Zotero running?): {e}"
         )),
     }
 }
