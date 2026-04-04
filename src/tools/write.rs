@@ -607,20 +607,132 @@ pub fn zotero_attach_pdf(args: &Value, ctx: &ServerContext) -> ToolCallResult {
     }
 }
 
-// Placeholder for fetch_missing_pdfs (needs PDF resolver from Step 6)
+/// Scan items for missing PDFs and resolve from 9 open-access sources.
 pub fn zotero_fetch_missing_pdfs(args: &Value, ctx: &ServerContext) -> ToolCallResult {
     let dry_run = args.get("dry_run").and_then(|v| v.as_bool()).unwrap_or(false);
     let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(50) as usize;
+    let collection_key = args.get("collection_key").and_then(|v| v.as_str());
 
     let zdb = match ctx.db.zotero() {
         Ok(db) => db,
         Err(e) => return ToolCallResult::error(e.to_string()),
     };
 
-    // TODO: implement with PDF resolver in Step 6
-    ToolCallResult::text(format!(
-        "fetch_missing_pdfs: dry_run={dry_run}, limit={limit}. PDF resolver not yet implemented in Rust."
-    ))
+    // Get items that need PDFs
+    let items_to_scan: Vec<(i64, String)> = if let Some(ck) = collection_key {
+        match zdb.collection_items(ck, limit) {
+            Ok(items) => items,
+            Err(e) => return ToolCallResult::error(e.to_string()),
+        }
+    } else {
+        match zdb.recent_items(limit) {
+            Ok(items) => items,
+            Err(e) => return ToolCallResult::error(e.to_string()),
+        }
+    };
+
+    // Filter to items without PDF attachments
+    let mut missing: Vec<(String, Option<String>, Option<String>)> = Vec::new(); // (item_key, doi, title)
+    for (item_id, item_key) in &items_to_scan {
+        let has_pdf = zdb.item_attachments(*item_id)
+            .map(|atts| atts.iter().any(|a| a.content_type == "application/pdf"))
+            .unwrap_or(false);
+
+        if !has_pdf {
+            let metadata = zdb.item_metadata(*item_id).unwrap_or_default();
+            missing.push((
+                item_key.clone(),
+                metadata.get("DOI").cloned(),
+                metadata.get("title").cloned(),
+            ));
+        }
+    }
+
+    if missing.is_empty() {
+        return ToolCallResult::text(format!(
+            "Scanned {} items. All have PDF attachments.",
+            items_to_scan.len()
+        ));
+    }
+
+    let mut output = format!(
+        "Scanned {} items, {} missing PDFs.\n\n",
+        items_to_scan.len(),
+        missing.len()
+    );
+
+    let mut resolved = 0;
+    let mut attached = 0;
+
+    for (item_key, doi, title) in &missing {
+        let result = super::pdf::resolve_pdf(
+            doi.as_deref(),
+            None,
+            title.as_deref(),
+        );
+
+        let citekey = ctx.db.citekey_for_item_key(item_key)
+            .unwrap_or_else(|| item_key.clone());
+
+        match result {
+            Some(pdf) if pdf.downloadable => {
+                resolved += 1;
+                if dry_run {
+                    output.push_str(&format!(
+                        "[would attach] {citekey} — {} (via {})\n",
+                        pdf.url, pdf.source
+                    ));
+                } else {
+                    // Actually download and attach
+                    let client = match get_write_client(ctx) {
+                        Ok(c) => c,
+                        Err(e) => {
+                            output.push_str(&format!("[error] {citekey} — {e}\n"));
+                            continue;
+                        }
+                    };
+                    let tmp = std::env::temp_dir().join(format!("zotero-mcp-{item_key}.pdf"));
+                    match client.download_file(&pdf.url, &tmp) {
+                        Ok(()) => {
+                            match client.attach_file(item_key, &tmp, &citekey) {
+                                Ok(_) => {
+                                    attached += 1;
+                                    output.push_str(&format!(
+                                        "[attached] {citekey} — {} (via {})\n",
+                                        pdf.url, pdf.source
+                                    ));
+                                }
+                                Err(e) => {
+                                    output.push_str(&format!("[error] {citekey} — attach failed: {e}\n"));
+                                }
+                            }
+                            let _ = std::fs::remove_file(&tmp);
+                        }
+                        Err(e) => {
+                            output.push_str(&format!("[error] {citekey} — download failed: {e}\n"));
+                        }
+                    }
+                }
+            }
+            Some(pdf) => {
+                output.push_str(&format!(
+                    "[manual] {citekey} — {} (via {}, not downloadable)\n",
+                    pdf.url, pdf.source
+                ));
+            }
+            None => {
+                output.push_str(&format!("[not found] {citekey}\n"));
+            }
+        }
+    }
+
+    output.push_str(&format!(
+        "\nResolved: {resolved}, Attached: {attached}, Manual: {}, Not found: {}",
+        missing.len() - resolved,
+        missing.len() - resolved
+    ));
+
+    ToolCallResult::text(output)
 }
 
 // Placeholder for archive tools

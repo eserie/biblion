@@ -15,6 +15,7 @@
 pub mod read;
 pub mod write;
 pub mod format;
+pub mod pdf;
 
 use serde_json::{json, Value};
 
