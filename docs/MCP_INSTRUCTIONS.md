@@ -1,1 +1,0 @@
-../crates/biblion/MCP_INSTRUCTIONS.md
