@@ -42,13 +42,17 @@ static URL_RE: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 /// Shared tokio runtime for PDF resolution. Created once, reused across calls.
-/// Using OnceLock avoids the overhead of creating a new runtime per call
-/// and prevents the panic hazard of nested `block_on` calls.
+///
+/// Uses `new_multi_thread` (not `new_current_thread`) because in SSE mode,
+/// multiple concurrent requests may call `resolve_pdf()` from different
+/// `spawn_blocking` threads. A current-thread runtime would deadlock or panic
+/// when a second `block_on()` is called on the same runtime.
 static PDF_RUNTIME: std::sync::OnceLock<tokio::runtime::Runtime> = std::sync::OnceLock::new();
 
 fn pdf_runtime() -> &'static tokio::runtime::Runtime {
     PDF_RUNTIME.get_or_init(|| {
-        tokio::runtime::Builder::new_current_thread()
+        tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(2)
             .enable_all()
             .build()
             .expect("failed to build PDF tokio runtime")

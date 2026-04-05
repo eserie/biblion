@@ -363,14 +363,14 @@ pub fn zotero_add_note(args: &Value, ctx: &ServerContext) -> ToolCallResult {
         format!("<p>{}</p>", content.replace('\n', "</p><p>"))
     };
 
-    let note = json!([{
+    let note = json!({
         "itemType": "note",
         "parentItem": item_key,
         "note": html,
         "tags": args.get("tags").and_then(|v| v.as_array())
             .map(|arr| arr.iter().filter_map(|t| t.as_str()).map(|t| json!({"tag": t})).collect::<Vec<_>>())
             .unwrap_or_default(),
-    }]);
+    });
 
     match client.create_items(&[note]) {
         Ok(_) => ToolCallResult::text(format!("Note added to {citekey}.")),
@@ -788,11 +788,3 @@ pub fn zotero_fetch_missing_pdfs(args: &Value, ctx: &ServerContext) -> ToolCallR
     ToolCallResult::text(output)
 }
 
-// Placeholder for archive tools
-pub fn zotero_archive_report(_args: &Value, _ctx: &ServerContext) -> ToolCallResult {
-    ToolCallResult::error("zotero_archive_report not yet implemented in Rust. Use Python MCP server.".into())
-}
-
-pub fn zotero_archive_webpage(_args: &Value, _ctx: &ServerContext) -> ToolCallResult {
-    ToolCallResult::error("zotero_archive_webpage not yet implemented in Rust (requires Playwright). Use Python MCP server.".into())
-}

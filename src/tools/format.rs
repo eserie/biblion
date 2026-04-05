@@ -49,16 +49,20 @@ pub fn format_item_summary(item: &ZoteroItem, citekey: Option<&str>) -> String {
     parts.join("\n")
 }
 
-/// Format creators as "LastName, F.; LastName2, F."
+/// Format creators as "LastName, F. I.; LastName2, F."
 pub fn format_creators(creators: &[Creator]) -> String {
     creators
         .iter()
         .map(|c| {
             match &c.first_name {
                 Some(first) if !first.is_empty() => {
-                    // Abbreviate: "Richard" → "R."
-                    let initial = first.chars().next().unwrap();
-                    format!("{}, {initial}.", c.last_name)
+                    // Abbreviate: "Richard A." → "R. A."
+                    let initials: String = first
+                        .split_whitespace()
+                        .map(|w| format!("{}.", w.chars().next().unwrap_or(' ')))
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                    format!("{}, {initials}", c.last_name)
                 }
                 _ => c.last_name.clone(),
             }
@@ -179,6 +183,14 @@ mod tests {
             Creator { creator_type: "author".into(), first_name: Some("Jane".into()), last_name: "Smith".into(), order: 1 },
         ];
         assert_eq!(format_creators(&creators), "Doe, J.; Smith, J.");
+    }
+
+    #[test]
+    fn format_creators_multi_word_first_name() {
+        let creators = vec![
+            Creator { creator_type: "author".into(), first_name: Some("Richard A.".into()), last_name: "DeMillo".into(), order: 0 },
+        ];
+        assert_eq!(format_creators(&creators), "DeMillo, R. A.");
     }
 
     #[test]

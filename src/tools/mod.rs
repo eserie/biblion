@@ -235,27 +235,6 @@ pub fn tool_catalog() -> Vec<ToolDefinition> {
         }
     })));
 
-    tools.push(tool("zotero_archive_report", "Archive an internal report (create item + attach PDF).", json!({
-        "type": "object",
-        "properties": {
-            "pdf_path": { "type": "string" },
-            "title": { "type": "string" },
-            "authors": { "type": "array", "items": { "type": "string" } },
-            "report_number": { "type": "string" }
-        },
-        "required": ["pdf_path", "title", "authors", "report_number"]
-    })));
-
-    tools.push(tool("zotero_archive_webpage", "Archive a web page as PDF and attach to Zotero.", json!({
-        "type": "object",
-        "properties": {
-            "url": { "type": "string" },
-            "item_key": { "type": "string" },
-            "title": { "type": "string" }
-        },
-        "required": ["url"]
-    })));
-
     tools
 }
 
@@ -313,9 +292,6 @@ pub fn handle_tool_call(name: &str, args: &Value, ctx: &ServerContext) -> ToolCa
         "zotero_merge_items" => write::zotero_merge_items(args, ctx),
         "zotero_attach_pdf" => write::zotero_attach_pdf(args, ctx),
         "zotero_fetch_missing_pdfs" => write::zotero_fetch_missing_pdfs(args, ctx),
-        "zotero_archive_report" => write::zotero_archive_report(args, ctx),
-        "zotero_archive_webpage" => write::zotero_archive_webpage(args, ctx),
-
         _ => ToolCallResult::error(format!("Unknown tool: {name}")),
     }
 }
