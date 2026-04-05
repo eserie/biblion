@@ -211,13 +211,11 @@ impl ZoteroWebClient {
 
     /// Upload a file attachment to an item.
     ///
-    /// This is the Zotero two-step upload:
-    /// 1. Register the upload (get S3 pre-signed URL)
-    /// 2. Upload to S3
-    /// 3. Confirm upload
-    ///
-    /// For simplicity in v1, we use the "linked file" attachment method instead,
-    /// which just records the path without uploading.
+    /// Implements the full Zotero file upload protocol:
+    /// 1. Create attachment item metadata
+    /// 2. Get upload authorization (with file hash)
+    /// 3. Upload file bytes to S3
+    /// 4. Register the upload with Zotero
     pub fn attach_file(
         &self,
         parent_key: &str,
@@ -229,7 +227,17 @@ impl ZoteroWebClient {
             .and_then(|n| n.to_str())
             .unwrap_or("attachment.pdf");
 
-        let template = serde_json::json!([{
+        let file_bytes = std::fs::read(file_path)
+            .with_context(|| format!("Failed to read {}", file_path.display()))?;
+        let file_md5 = format!("{:x}", md5::compute(&file_bytes));
+        let filesize = file_bytes.len();
+        let mtime = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis();
+
+        // Step 1: Create attachment item
+        let template = serde_json::json!({
             "itemType": "attachment",
             "parentItem": parent_key,
             "linkMode": "imported_file",
@@ -238,9 +246,151 @@ impl ZoteroWebClient {
             "filename": filename,
             "tags": [],
             "relations": {},
-        }]);
+        });
 
-        self.create_items(&[template])
+        let create_resp = self
+            .create_items(&[template])
+            .with_context(|| "Failed to create attachment item")?;
+
+        let attachment_key = create_resp
+            .pointer("/successful/0/key")
+            .or_else(|| create_resp.pointer("/successful/0/data/key"))
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow::anyhow!("No attachment key in API response: {create_resp}"))?
+            .to_string();
+
+        let attachment_version = create_resp
+            .pointer("/successful/0/version")
+            .or_else(|| create_resp.pointer("/successful/0/data/version"))
+            .and_then(|v| v.as_i64())
+            .unwrap_or(0) as i32;
+
+        // Step 2: Get upload authorization
+        let auth = match self.get_upload_authorization(
+            &attachment_key,
+            &file_md5,
+            filename,
+            filesize,
+            mtime,
+        ) {
+            Ok(a) => a,
+            Err(e) => {
+                let _ = self.delete_item(&attachment_key, attachment_version);
+                return Err(e.context("Failed to get upload authorization"));
+            }
+        };
+
+        // If file already exists on server, we're done
+        if auth.get("exists").and_then(|v| v.as_i64()) == Some(1) {
+            return Ok(create_resp);
+        }
+
+        // Step 3: Upload to S3
+        let url = auth["url"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("Missing 'url' in upload auth response"))?;
+        let content_type = auth["contentType"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("Missing 'contentType' in upload auth response"))?;
+        let prefix = auth["prefix"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("Missing 'prefix' in upload auth response"))?;
+        let suffix = auth["suffix"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("Missing 'suffix' in upload auth response"))?;
+        let upload_key = auth["uploadKey"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("Missing 'uploadKey' in upload auth response"))?;
+
+        if let Err(e) = self.upload_to_s3(url, content_type, prefix, &file_bytes, suffix) {
+            let _ = self.delete_item(&attachment_key, attachment_version);
+            return Err(e.context("Failed to upload file to storage"));
+        }
+
+        // Step 4: Register upload
+        if let Err(e) = self.register_upload(&attachment_key, upload_key) {
+            let _ = self.delete_item(&attachment_key, attachment_version);
+            return Err(e.context("Failed to register upload"));
+        }
+
+        Ok(create_resp)
+    }
+
+    /// Step 2: Get upload authorization from Zotero.
+    fn get_upload_authorization(
+        &self,
+        key: &str,
+        md5: &str,
+        filename: &str,
+        filesize: usize,
+        mtime: u128,
+    ) -> Result<Value> {
+        let mut headers = self.headers();
+        headers.insert(
+            reqwest::header::CONTENT_TYPE,
+            "application/x-www-form-urlencoded".parse().unwrap(),
+        );
+        headers.insert("If-None-Match", "*".parse().unwrap());
+
+        let body = format!("md5={md5}&filename={filename}&filesize={filesize}&mtime={mtime}");
+
+        let resp = self
+            .client
+            .post(format!("{}/items/{key}/file", self.base_url))
+            .headers(headers)
+            .body(body)
+            .send()
+            .with_context(|| format!("Upload auth request failed for {key}"))?;
+        resp.error_for_status_ref()
+            .with_context(|| format!("Upload auth rejected for {key}"))?;
+        resp.json().map_err(Into::into)
+    }
+
+    /// Step 3: Upload file bytes to S3 pre-signed URL.
+    fn upload_to_s3(
+        &self,
+        url: &str,
+        content_type: &str,
+        prefix: &str,
+        file_bytes: &[u8],
+        suffix: &str,
+    ) -> Result<()> {
+        let mut body = Vec::with_capacity(prefix.len() + file_bytes.len() + suffix.len());
+        body.extend_from_slice(prefix.as_bytes());
+        body.extend_from_slice(file_bytes);
+        body.extend_from_slice(suffix.as_bytes());
+
+        let resp = self
+            .client
+            .post(url)
+            .header(reqwest::header::CONTENT_TYPE, content_type)
+            .body(body)
+            .send()
+            .with_context(|| "S3 upload request failed")?;
+        resp.error_for_status_ref()
+            .with_context(|| "S3 upload rejected")?;
+        Ok(())
+    }
+
+    /// Step 4: Register a completed upload with Zotero.
+    fn register_upload(&self, key: &str, upload_key: &str) -> Result<()> {
+        let mut headers = self.headers();
+        headers.insert(
+            reqwest::header::CONTENT_TYPE,
+            "application/x-www-form-urlencoded".parse().unwrap(),
+        );
+        headers.insert("If-None-Match", "*".parse().unwrap());
+
+        let resp = self
+            .client
+            .post(format!("{}/items/{key}/file", self.base_url))
+            .headers(headers)
+            .body(format!("upload={upload_key}"))
+            .send()
+            .with_context(|| format!("Register upload failed for {key}"))?;
+        resp.error_for_status_ref()
+            .with_context(|| format!("Register upload rejected for {key}"))?;
+        Ok(())
     }
 }
 
@@ -260,5 +410,187 @@ mod tests {
         let headers = client.headers();
         assert_eq!(headers.get("Zotero-API-Key").unwrap(), "my-secret-key");
         assert_eq!(headers.get("Zotero-API-Version").unwrap(), "3");
+    }
+}
+
+#[cfg(test)]
+mod upload_tests {
+    use super::*;
+    use wiremock::matchers::{body_string_contains, header, method, path, path_regex};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    fn make_test_pdf(dir: &std::path::Path) -> std::path::PathBuf {
+        let path = dir.join("test.pdf");
+        std::fs::write(&path, b"%PDF-1.4 test content").unwrap();
+        path
+    }
+
+    #[tokio::test]
+    async fn upload_flow_success() {
+        let server = MockServer::start().await;
+        let uri = server.uri();
+
+        // Step 1: Create attachment item
+        Mock::given(method("POST"))
+            .and(path("/items"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "successful": {
+                    "0": { "key": "ATT001", "version": 1, "data": { "key": "ATT001", "version": 1 } }
+                },
+                "unchanged": {},
+                "failed": {}
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        // Step 2: Upload authorization
+        let s3_url = format!("{uri}/s3-upload");
+        Mock::given(method("POST"))
+            .and(path_regex(r"/items/ATT001/file"))
+            .and(body_string_contains("md5="))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "url": s3_url,
+                "contentType": "application/pdf",
+                "prefix": "PREFIX",
+                "suffix": "SUFFIX",
+                "uploadKey": "upload-key-123"
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        // Step 3: S3 upload
+        Mock::given(method("POST"))
+            .and(path("/s3-upload"))
+            .respond_with(ResponseTemplate::new(201))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        // Step 4: Register upload
+        Mock::given(method("POST"))
+            .and(path_regex(r"/items/ATT001/file"))
+            .and(body_string_contains("upload="))
+            .respond_with(ResponseTemplate::new(204))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let pdf = make_test_pdf(tmp.path());
+        let result = tokio::task::spawn_blocking(move || {
+            let client = ZoteroWebClient::with_base_url("test-key", &uri);
+            client.attach_file("PARENT01", &pdf, "Test Paper")
+        })
+        .await
+        .unwrap();
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn upload_flow_file_exists() {
+        let server = MockServer::start().await;
+        let uri = server.uri();
+
+        // Step 1: Create attachment
+        Mock::given(method("POST"))
+            .and(path("/items"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "successful": {
+                    "0": { "key": "ATT002", "version": 1, "data": { "key": "ATT002", "version": 1 } }
+                },
+                "unchanged": {},
+                "failed": {}
+            })))
+            .mount(&server)
+            .await;
+
+        // Step 2: File already exists
+        Mock::given(method("POST"))
+            .and(path_regex(r"/items/ATT002/file"))
+            .and(body_string_contains("md5="))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "exists": 1
+            })))
+            .mount(&server)
+            .await;
+
+        // S3 should NOT be called
+        Mock::given(method("POST"))
+            .and(path("/s3-upload"))
+            .respond_with(ResponseTemplate::new(201))
+            .expect(0)
+            .mount(&server)
+            .await;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let pdf = make_test_pdf(tmp.path());
+        let result = tokio::task::spawn_blocking(move || {
+            let client = ZoteroWebClient::with_base_url("test-key", &uri);
+            client.attach_file("PARENT02", &pdf, "Test Paper")
+        })
+        .await
+        .unwrap();
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn upload_flow_s3_failure_cleans_up() {
+        let server = MockServer::start().await;
+        let uri = server.uri();
+
+        // Step 1: Create attachment
+        Mock::given(method("POST"))
+            .and(path("/items"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "successful": {
+                    "0": { "key": "ATT003", "version": 1, "data": { "key": "ATT003", "version": 1 } }
+                },
+                "unchanged": {},
+                "failed": {}
+            })))
+            .mount(&server)
+            .await;
+
+        // Step 2: Authorization succeeds
+        let s3_url = format!("{uri}/s3-upload");
+        Mock::given(method("POST"))
+            .and(path_regex(r"/items/ATT003/file"))
+            .and(body_string_contains("md5="))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "url": s3_url,
+                "contentType": "application/pdf",
+                "prefix": "P",
+                "suffix": "S",
+                "uploadKey": "uk"
+            })))
+            .mount(&server)
+            .await;
+
+        // Step 3: S3 fails
+        Mock::given(method("POST"))
+            .and(path("/s3-upload"))
+            .respond_with(ResponseTemplate::new(500))
+            .mount(&server)
+            .await;
+
+        // Cleanup: DELETE the orphan attachment
+        Mock::given(method("DELETE"))
+            .and(path_regex(r"/items/ATT003"))
+            .respond_with(ResponseTemplate::new(204))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let pdf = make_test_pdf(tmp.path());
+        let result = tokio::task::spawn_blocking(move || {
+            let client = ZoteroWebClient::with_base_url("test-key", &uri);
+            client.attach_file("PARENT03", &pdf, "Test Paper")
+        })
+        .await
+        .unwrap();
+        assert!(result.is_err());
     }
 }

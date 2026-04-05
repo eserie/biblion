@@ -16,3 +16,14 @@ Biblion gives you access to a Zotero reference library. Use citation keys (citek
 - **Collection key**: 8-character key for collections (e.g., 'COL00001'). Use zotero_get_collections to discover them.
 - **storage_hash**: MD5 content hash of PDFs, exposed in get_pdf_path and list_attachments for content-identity.
 - **Write tools are disabled by default**. If you get a 'writes disabled' error, the user needs to set ZOTERO_MCP_ENABLE_WRITES=true.
+
+## Workflow patterns
+
+**Adding a new paper**: When a paper is not found and the user wants it added, complete the full flow without pausing between steps:
+1. `zotero_create_item` with metadata
+2. `paper_resolve_pdf` to find an open-access PDF
+3. `zotero_attach_pdf` to download and attach it
+
+Only pause if the PDF cannot be found or if the metadata is ambiguous.
+
+**Always search first**: Use `zotero_search` before creating to avoid duplicates.

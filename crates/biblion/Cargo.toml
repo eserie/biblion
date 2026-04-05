@@ -22,9 +22,11 @@ tokio = { version = "1", features = ["rt", "rt-multi-thread", "net", "sync", "ma
 dotenvy = "0.15"
 toml = "0.8"
 regex = "1"
+md5 = "0.7"
 axum = "0.8"
 uuid = { version = "1", features = ["v4"] }
 tokio-stream = "0.1"
 
 [dev-dependencies]
 wiremock = "0.6"
+tempfile = "3"

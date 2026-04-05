@@ -40,21 +40,14 @@ use super::resolve_citekey;
 
 /// Resolve an identifier that may be either a Zotero item key (8-char) or a BBT citekey.
 ///
-/// Zotero item keys are exactly 8 uppercase alphanumeric characters (e.g., "ABC12345").
-/// Anything else is treated as a citekey and resolved via BBT.
+/// Zotero item keys are 8 alphanumeric characters (e.g., "TQPUXSC2").
+/// Anything longer is treated as a citekey and resolved via BBT.
+/// We accept item keys without verifying in SQLite because freshly
+/// created items may not have synced to the local database yet.
 fn resolve_item_key(ctx: &ServerContext, key: &str) -> Result<String, String> {
-    // Zotero item keys are exactly 8 chars, uppercase alphanumeric
-    if key.len() == 8
-        && key
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() && !c.is_ascii_lowercase())
-    {
-        // Looks like an item key — verify it exists
-        if let Ok(zdb) = ctx.db.zotero()
-            && let Ok(Some(_)) = zdb.item_by_key(key)
-        {
-            return Ok(key.to_string());
-        }
+    // Zotero item keys are exactly 8 chars, alphanumeric
+    if key.len() == 8 && key.chars().all(|c| c.is_ascii_alphanumeric()) {
+        return Ok(key.to_string());
     }
     // Try as citekey
     resolve_citekey(ctx, key)
