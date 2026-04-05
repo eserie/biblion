@@ -13,7 +13,7 @@ An MCP server that connects your Zotero library to Claude and other LLMs. Search
 
 ## What it does
 
-You ask Claude "find me the BibTeX for that portfolio optimization paper" and it searches your Zotero library, finds the item, and returns the citation — in under a millisecond. No plugins needed, Zotero does not even need to be running. The server reads your local Zotero database directly and exposes 26 tools: search, browse, cite, export, organize, and resolve PDFs from 9 academic sources.
+You ask Claude "find me the BibTeX for that portfolio optimization paper" and it searches your Zotero library, finds the item, and returns the citation — in under a millisecond. No plugins needed, Zotero does not even need to be running. The server reads your local Zotero database directly and exposes 25 tools: search, browse, cite, export, organize, and resolve PDFs from 9 academic sources.
 
 ## Quick start
 
@@ -22,8 +22,7 @@ You ask Claude "find me the BibTeX for that portfolio optimization paper" and it
 ```bash
 git clone https://github.com/eserie/biblion.git
 cd biblion
-cargo build --release
-cp target/release/biblion ~/.local/bin/
+just install    # or: cargo build --release && cp target/release/biblion ~/.local/bin/
 ```
 
 **2. Add to Claude Code** (in `~/.claude.json` under `"mcpServers"`):
