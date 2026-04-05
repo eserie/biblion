@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/eserie/zotero-mcp-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/eserie/zotero-mcp-rs/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-41%25-yellow)](https://github.com/eserie/zotero-mcp-rs)
-[![Mutation Score](https://img.shields.io/badge/mutation_score-72%25-green)](https://github.com/eserie/zotero-mcp-rs)
+[![Mutation Score](https://img.shields.io/badge/mutation_score-72%25-green)](https://github.com/eserie/zotero-mcp-rs/actions/workflows/mutants.yml)
 [![Rust](https://img.shields.io/badge/rust-2024_edition-orange?logo=rust)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/protocol-MCP_2024--11--05-purple)](https://modelcontextprotocol.io)

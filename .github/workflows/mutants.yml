@@ -1,0 +1,64 @@
+name: Mutation Testing
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # 03:00 UTC daily
+  workflow_dispatch: # allow manual trigger
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  mutants:
+    name: cargo-mutants
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [paper-resolver, zotero-mcp]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants
+
+      - name: Run mutation tests on ${{ matrix.package }}
+        run: cargo mutants --package ${{ matrix.package }} -- --release
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutants-${{ matrix.package }}
+          path: mutants.out/
+
+      - name: Extract mutation score
+        if: always()
+        id: score
+        run: |
+          if [ -f mutants.out/outcomes.json ]; then
+            TOTAL=$(python3 -c "import json; d=json.load(open('mutants.out/outcomes.json')); print(d['total_mutants'])")
+            CAUGHT=$(python3 -c "import json; d=json.load(open('mutants.out/outcomes.json')); print(d.get('caught',0))")
+            UNVIABLE=$(python3 -c "import json; d=json.load(open('mutants.out/outcomes.json')); print(d.get('unviable',0))")
+            TIMEOUT=$(python3 -c "import json; d=json.load(open('mutants.out/outcomes.json')); print(d.get('timeout',0))")
+            VIABLE=$((TOTAL - UNVIABLE))
+            if [ $VIABLE -gt 0 ]; then
+              SCORE=$(python3 -c "print(round(($CAUGHT + $TIMEOUT) / $VIABLE * 100, 1))")
+            else
+              SCORE=0
+            fi
+            echo "score=$SCORE" >> $GITHUB_OUTPUT
+            echo "viable=$VIABLE" >> $GITHUB_OUTPUT
+            echo "caught=$CAUGHT" >> $GITHUB_OUTPUT
+            echo "## Mutation Testing: ${{ matrix.package }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Total mutants | $TOTAL |" >> $GITHUB_STEP_SUMMARY
+            echo "| Unviable | $UNVIABLE |" >> $GITHUB_STEP_SUMMARY
+            echo "| Viable | $VIABLE |" >> $GITHUB_STEP_SUMMARY
+            echo "| Caught | $CAUGHT |" >> $GITHUB_STEP_SUMMARY
+            echo "| Timeout | $TIMEOUT |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Mutation Score** | **${SCORE}%** |" >> $GITHUB_STEP_SUMMARY
+          fi
