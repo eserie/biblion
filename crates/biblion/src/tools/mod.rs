@@ -103,7 +103,7 @@ pub fn tool_catalog() -> Vec<ToolDefinition> {
 
     tools.push(tool(
         "zotero_get_pdf_path",
-        "Get filesystem path(s) to PDF attachments for an item.",
+        "Get filesystem path(s) and MD5 content hash of PDF attachments for an item. Returns resolved paths + md5:{hash} for content-identity.",
         json!({
             "type": "object",
             "properties": {
@@ -115,7 +115,7 @@ pub fn tool_catalog() -> Vec<ToolDefinition> {
 
     tools.push(tool(
         "zotero_list_attachments",
-        "List all attachments for an item.",
+        "List all attachments for an item with content type, path, and MD5 hash.",
         json!({
             "type": "object",
             "properties": {

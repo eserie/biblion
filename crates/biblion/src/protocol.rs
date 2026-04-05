@@ -75,6 +75,10 @@ pub struct InitializeResult {
     pub protocol_version: String,
     pub capabilities: ServerCapabilities,
     pub server_info: ServerInfo,
+    /// Instructions for the agent — explains what this server provides
+    /// and how to use it. Sent once on connection.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub instructions: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -230,6 +234,7 @@ mod tests {
                 name: "biblion".into(),
                 version: "0.1.0".into(),
             },
+            instructions: None,
         };
         let json = serde_json::to_value(result).unwrap();
         assert_eq!(json["protocolVersion"], "2024-11-05");
