@@ -33,7 +33,7 @@ just ci            # Full local CI: fmt, lint, test, doc
 just test          # cargo test --workspace
 just lint          # cargo clippy --workspace -- -D warnings
 just fmt           # cargo fmt --all
-just install       # Build release + install to ~/.local/bin
+just install       # Build release + install to ~/.cargo/bin
 just check         # Run biblion diagnostics
 just coverage      # Code coverage (cargo-tarpaulin)
 just mutants       # Mutation testing (cargo-mutants)

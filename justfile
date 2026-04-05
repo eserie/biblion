@@ -25,9 +25,9 @@ fmt:
 ci: fmt lint test
     cargo doc --workspace --no-deps
 
-# Install binary to ~/.local/bin
+# Install binary to ~/.cargo/bin
 install: build
-    install -m 755 target/release/biblion ~/.local/bin/biblion
+    install -m 755 target/release/biblion ~/.cargo/bin/biblion
 
 # Run diagnostics
 check:

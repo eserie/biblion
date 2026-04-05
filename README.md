@@ -39,7 +39,7 @@ cd biblion
 just install
 ```
 
-> Make sure `~/.local/bin` (or `~/.cargo/bin`) is in your `PATH`.
+> Make sure `~/.cargo/bin` is in your `PATH`.
 
 **2. Add to Claude Code** (in `~/.claude.json` under `"mcpServers"`):
 
@@ -193,7 +193,7 @@ Requires Rust 1.85+ (2024 edition). The workspace contains two crates:
 If you have [just](https://github.com/casey/just) installed:
 
 ```bash
-just install    # build + install to ~/.local/bin
+just install    # build + install to ~/.cargo/bin
 just ci         # full local CI (fmt, lint, test, doc)
 just coverage   # run code coverage
 just check      # run biblion diagnostics
