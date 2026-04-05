@@ -94,10 +94,10 @@ flowchart LR
 
 Agents receive instructions on MCP connection via the `instructions`
 field in the `initialize` response. The content comes from
-[`docs/MCP_INSTRUCTIONS.md`](MCP_INSTRUCTIONS.md), embedded into the
+[`crates/biblion/MCP_INSTRUCTIONS.md`](../crates/biblion/MCP_INSTRUCTIONS.md), embedded into the
 binary at compile time via `include_str!` in `server.rs`.
 
-**When adding or changing tools, always update `docs/MCP_INSTRUCTIONS.md`.**
+**When adding or changing tools, always update `crates/biblion/MCP_INSTRUCTIONS.md`.**
 This is the single source of truth for what agents see. It is compiled
 into the binary — no external file needed at runtime.
 
@@ -125,7 +125,7 @@ into the binary — no external file needed at runtime.
    "zotero_my_tool" => read::zotero_my_tool(args, ctx),
    ```
 
-4. **Update `docs/MCP_INSTRUCTIONS.md`** — agents see this on connect.
+4. **Update `crates/biblion/MCP_INSTRUCTIONS.md`** — agents see this on connect.
 
 ## How to add a new PDF source
 
@@ -145,6 +145,6 @@ into the binary — no external file needed at runtime.
    })),
    ```
 
-4. **Update `docs/MCP_INSTRUCTIONS.md`** if the source should be mentioned to agents.
+4. **Update `crates/biblion/MCP_INSTRUCTIONS.md`** if the source should be mentioned to agents.
 
 The source will automatically be configurable via TOML and shown in `paper_source_status`.

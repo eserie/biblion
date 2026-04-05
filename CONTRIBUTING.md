@@ -27,7 +27,7 @@ Requires [Rust](https://www.rust-lang.org/tools/install) 1.85+ and [just](https:
 1. Add handler in `crates/biblion/src/tools/{read,write,paper}.rs`
 2. Add catalog entry in `tools/mod.rs` → `tool_catalog()`
 3. Add dispatch arm in `tools/mod.rs` → `handle_tool_call()`
-4. **Update `docs/MCP_INSTRUCTIONS.md`** — this is what agents see on connect. If you add a tool and don't update this file, agents won't know it exists.
+4. **Update `crates/biblion/MCP_INSTRUCTIONS.md`** — this is what agents see on connect. If you add a tool and don't update this file, agents won't know it exists.
 5. Add a test (use `test_helpers::test_ctx()` for in-memory SQLite fixtures)
 
 ## Adding a new PDF source

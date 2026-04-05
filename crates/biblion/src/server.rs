@@ -44,7 +44,7 @@ use crate::tools;
 ///
 /// This is the "over-the-wire CLAUDE.md" — the single source of truth for
 /// agent-facing documentation. Keep it in sync when adding or changing tools.
-const SERVER_INSTRUCTIONS: &str = include_str!("../../../docs/MCP_INSTRUCTIONS.md");
+const SERVER_INSTRUCTIONS: &str = include_str!("../MCP_INSTRUCTIONS.md");
 
 /// Runtime context shared across all tool calls.
 ///
