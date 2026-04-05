@@ -44,3 +44,23 @@ mutants package="paper-resolver":
 # Start SSE server (for Claude Desktop)
 serve:
     ZOTERO_MCP_TRANSPORT=sse biblion
+
+# Tag and release (triggers GitHub Actions release workflow)
+release version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Releasing v{{version}}..."
+    # Preflight checks
+    cargo test --workspace
+    cargo clippy --workspace -- -D warnings
+    cargo fmt --all -- --check
+    # Update version in Cargo.toml files
+    sed -i '' 's/^version = ".*"/version = "{{version}}"/' crates/biblion/Cargo.toml
+    sed -i '' 's/^version = ".*"/version = "{{version}}"/' crates/paper-resolver/Cargo.toml
+    sed -i '' 's/paper-resolver = { version = ".*"/paper-resolver = { version = "{{version}}"/' crates/biblion/Cargo.toml
+    # Commit, tag, push
+    git add -A
+    git commit -m "release: v{{version}}"
+    git tag -a "v{{version}}" -m "v{{version}}"
+    git push && git push --tags
+    echo "✓ Released v{{version}} — GitHub Actions will build binaries"
