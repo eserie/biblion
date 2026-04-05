@@ -2,6 +2,7 @@
 name = "biblion"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85"
 description = "High-performance MCP server that gives LLMs sub-millisecond access to your Zotero library"
 license = "MIT"
 repository = "https://github.com/eserie/biblion"
@@ -11,7 +12,7 @@ categories = ["command-line-utilities", "database"]
 authors = ["Emmanuel Serie <emmanuel@epinoia.io>"]
 
 [dependencies]
-paper-resolver = { path = "../paper-resolver" }
+paper-resolver = { version = "0.1.0", path = "../paper-resolver" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"

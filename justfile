@@ -44,12 +44,3 @@ mutants package="paper-resolver":
 # Start SSE server (for Claude Desktop)
 serve:
     ZOTERO_MCP_TRANSPORT=sse biblion
-
-# Load/reload LaunchAgent (SSE daemon)
-daemon-start:
-    launchctl load ~/Library/LaunchAgents/com.eserie.biblion.plist
-
-daemon-stop:
-    launchctl unload ~/Library/LaunchAgents/com.eserie.biblion.plist
-
-daemon-restart: daemon-stop daemon-start

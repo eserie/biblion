@@ -9,6 +9,8 @@
 
 An MCP server that connects your Zotero library to Claude and other LLMs. Search papers, export BibTeX, generate bibliographies, and find open-access PDFs — all from your AI assistant.
 
+*Biblion (βιβλίον) — Greek for "book, scroll." The root of "bibliography."*
+
 ---
 
 ## What it does
@@ -17,13 +19,21 @@ You ask Claude "find me the BibTeX for that portfolio optimization paper" and it
 
 ## Quick start
 
-**1. Build and install**
+**Prerequisites:** [Rust](https://www.rust-lang.org/tools/install) 1.85+ and a [Zotero](https://www.zotero.org/) library.
+
+**1. Install**
 
 ```bash
+# From source
+cargo install --git https://github.com/eserie/biblion.git biblion
+
+# Or clone and build
 git clone https://github.com/eserie/biblion.git
 cd biblion
 just install    # or: cargo build --release && cp target/release/biblion ~/.local/bin/
 ```
+
+> Make sure `~/.local/bin` (or `~/.cargo/bin`) is in your `PATH`.
 
 **2. Add to Claude Code** (in `~/.claude.json` under `"mcpServers"`):
 

@@ -2,11 +2,13 @@
 name = "paper-resolver"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85"
 description = "Concurrent PDF resolver for academic papers — 9 sources (arXiv, OpenAlex, CORE, Google Scholar, Unpaywall, Crossref, Zenodo, SSRN, Semantic Scholar)"
 license = "MIT"
 repository = "https://github.com/eserie/biblion"
 keywords = ["academic", "pdf", "arxiv", "open-access", "doi"]
 categories = ["web-programming", "science"]
+authors = ["Emmanuel Serie <emmanuel@epinoia.io>"]
 
 [dependencies]
 reqwest = { version = "0.12", features = ["json"] }
