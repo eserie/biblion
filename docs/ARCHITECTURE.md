@@ -1,5 +1,9 @@
 # Architecture
 
+> *Academic knowledge made addressable.*
+
+Biblion takes knowledge that exists (in Zotero's SQLite database) and makes it addressable — findable and retrievable by any process that speaks MCP or invokes the CLI.
+
 ## Crate structure
 
 ```

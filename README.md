@@ -7,7 +7,9 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/protocol-MCP_2024--11--05-purple)](https://modelcontextprotocol.io)
 
-An MCP server that connects your Zotero library to Claude and other LLMs. Search papers, export BibTeX, generate bibliographies, and find open-access PDFs — all from your AI assistant.
+**Your library, legible to every intelligence.**
+
+An MCP server that connects your Zotero library to Claude and other LLMs. Search papers, export BibTeX, generate bibliographies, and find open-access PDFs — from the terminal or from your AI assistant.
 
 *Biblion (βιβλίον) — Greek for "book, scroll." The root of "bibliography."*
 
