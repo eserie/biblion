@@ -178,9 +178,23 @@ Then in Claude Desktop settings:
 
 ## FAQ
 
+**How does it work under the hood?**
+
+```mermaid
+flowchart LR
+    U[You] -->|natural language| LLM[LLM<br/>semantic layer]
+    LLM -->|MCP tool calls| B[Biblion<br/>25 tools]
+    B -->|SQL queries| DB[(Zotero SQLite)]
+    B -->|HTTP| API[Zotero Web API<br/>writes only]
+    B -->|async HTTP| Sources[9 academic APIs<br/>PDF resolution]
+    DB -->|"< 1ms"| B
+```
+
+The LLM does the semantic work — it understands your question and translates it into structured tool calls. Biblion is a fast, structured bridge: pure SQL against Zotero's local SQLite, no embeddings, no vector store, no indexing pipeline.
+
 **Is there a vector database for semantic search?**
 
-No. Biblion does pure SQL queries against Zotero's local SQLite database — no embeddings, no indexing pipeline, no vector store. The LLM itself provides the semantic layer: it interprets your natural-language question and translates it into the right tool calls (search by title, filter by tag, browse collections). Biblion is just a fast, structured bridge to your data. This is why queries return in under a millisecond.
+No. Queries are pure SQL (`LIKE`, joins on Zotero's EAV schema). The LLM interprets your natural-language question and picks the right tools (search by title, filter by tag, browse collections). This is why reads return in under a millisecond.
 
 **Does Zotero need to be running?**
 
