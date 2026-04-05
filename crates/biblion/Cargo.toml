@@ -7,7 +7,7 @@ description = "High-performance MCP server that gives LLMs sub-millisecond acces
 license = "MIT"
 repository = "https://github.com/eserie/biblion"
 readme = "../../README.md"
-keywords = ["zotero", "mcp", "model-context-protocol", "sqlite", "bibliography"]
+keywords = ["zotero", "mcp", "sqlite", "bibliography", "reference"]
 categories = ["command-line-utilities", "database"]
 authors = ["Emmanuel Serie <emmanuel@biblion.dev>"]
 
