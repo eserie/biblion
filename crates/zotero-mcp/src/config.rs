@@ -192,12 +192,13 @@ fn load_resolver_config() -> paper_resolver::ResolverConfig {
 
         // Extra blocked domains
         if let Some(blocked) = resolver.get("blocked_domains").and_then(|v| v.as_table())
-            && let Some(extra) = blocked.get("extra").and_then(|v| v.as_array()) {
-                config.extra_blocked_domains = extra
-                    .iter()
-                    .filter_map(|v| v.as_str().map(String::from))
-                    .collect();
-            }
+            && let Some(extra) = blocked.get("extra").and_then(|v| v.as_array())
+        {
+            config.extra_blocked_domains = extra
+                .iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect();
+        }
     }
 
     config
