@@ -29,7 +29,7 @@
 //! | `ZOTERO_STORAGE_PATH` | `~/Zotero/storage` |
 //! | `BBT_MIGRATED_PATH` | `~/Zotero/better-bibtex.migrated` |
 //! | `ZOTERO_API_KEY` | (none — writes disabled) |
-//! | `ZOTERO_LIBRARY_ID` | `7292316` |
+//! | `ZOTERO_LIBRARY_ID` | (none — required for writes) |
 //! | `ZOTERO_LIBRARY_TYPE` | `user` |
 //! | `BBT_URL` | `http://localhost:23119/better-bibtex/json-rpc` |
 //! | `ZOTERO_MCP_LOG` | `info` |
