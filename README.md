@@ -13,6 +13,8 @@ An MCP server that connects your Zotero library to Claude and other LLMs. Search
 
 ---
 
+**Design philosophy:** Read the database directly — no plugins, no running Zotero. Write tools are off by default. Zero config works; TOML is for tuning, not setup.
+
 ## What it does
 
 You ask Claude "find me the BibTeX for that portfolio optimization paper" and it searches your Zotero library, finds the item, and returns the citation — in under a millisecond. No plugins needed, Zotero does not even need to be running. The server reads your local Zotero database directly and exposes 25 tools: search, browse, cite, export, organize, and resolve PDFs from 9 academic sources.
