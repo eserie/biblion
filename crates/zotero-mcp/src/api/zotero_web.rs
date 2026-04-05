@@ -46,7 +46,12 @@ impl ZoteroWebClient {
     /// Common headers for all API requests.
     fn headers(&self) -> reqwest::header::HeaderMap {
         let mut h = reqwest::header::HeaderMap::new();
-        h.insert("Zotero-API-Key", self.api_key.parse().unwrap());
+        h.insert(
+            "Zotero-API-Key",
+            self.api_key
+                .parse()
+                .expect("ZOTERO_API_KEY contains invalid header characters"),
+        );
         h.insert("Zotero-API-Version", "3".parse().unwrap());
         h.insert(
             reqwest::header::CONTENT_TYPE,

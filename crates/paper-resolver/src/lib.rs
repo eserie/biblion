@@ -170,8 +170,6 @@ fn is_downloadable(url: &str) -> bool {
 }
 
 /// Config-aware version that also checks extra_blocked_domains.
-/// TODO: thread config into all source handlers to use this everywhere.
-#[allow(dead_code)]
 fn is_downloadable_cfg(url: &str, config: &ResolverConfig) -> bool {
     if !is_downloadable(url) {
         return false;
@@ -295,8 +293,18 @@ pub async fn resolve_pdf_async(
 
     let results = futures::future::join_all(futures).await;
 
-    // Collect successful results
-    let mut candidates: Vec<(u8, ResolvedPdf)> = results.into_iter().flatten().collect();
+    // Collect successful results and apply config-aware downloadability check
+    let mut candidates: Vec<(u8, ResolvedPdf)> = results
+        .into_iter()
+        .flatten()
+        .map(|(pri, mut r)| {
+            // Re-check downloadability with extra_blocked_domains from config
+            if r.downloadable {
+                r.downloadable = is_downloadable_cfg(&r.url, config);
+            }
+            (pri, r)
+        })
+        .collect();
 
     // Prefer downloadable, then highest priority (lowest number)
     candidates.sort_by_key(|(pri, r)| (!r.downloadable, *pri));

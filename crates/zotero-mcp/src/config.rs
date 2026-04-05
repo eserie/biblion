@@ -184,6 +184,15 @@ fn load_resolver_config() -> paper_resolver::ResolverConfig {
                 .iter()
                 .filter_map(|s| {
                     let name = s.get("name")?.as_str()?.to_string();
+                    // Validate source name
+                    if !paper_resolver::SOURCE_NAMES.contains(&name.as_str()) {
+                        eprintln!(
+                            "[zotero-mcp] Warning: unknown source '{}' in config (valid: {:?})",
+                            name,
+                            paper_resolver::SOURCE_NAMES
+                        );
+                        return None;
+                    }
                     let enabled = s.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true);
                     Some(paper_resolver::SourceEntry::new(name, enabled))
                 })

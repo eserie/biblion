@@ -337,18 +337,6 @@ pub fn tool_catalog() -> Vec<ToolDefinition> {
     ));
 
     tools.push(tool(
-        "paper_search",
-        "Search for an open-access PDF by title across academic sources.",
-        json!({
-            "type": "object",
-            "properties": {
-                "query": { "type": "string", "description": "Search query (paper title or keywords)" }
-            },
-            "required": ["query"]
-        }),
-    ));
-
-    tools.push(tool(
         "paper_source_status",
         "Show configured paper resolver sources, their priority, and status.",
         json!({
@@ -419,7 +407,7 @@ pub fn handle_tool_call(name: &str, args: &Value, ctx: &ServerContext) -> ToolCa
 
         // Paper search tools (standalone, no Zotero item needed)
         "paper_resolve_pdf" => paper::paper_resolve_pdf(args, ctx),
-        "paper_search" => paper::paper_search(args, ctx),
+        // paper_search removed — paper_resolve_pdf handles title-only queries
         "paper_source_status" => paper::paper_source_status(ctx),
 
         _ => ToolCallResult::error(format!("Unknown tool: {name}")),

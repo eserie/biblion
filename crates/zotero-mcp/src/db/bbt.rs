@@ -214,3 +214,58 @@ mod tests {
         assert_eq!(map["jiaAnalysisSurvey2011"], "DEF67890");
     }
 }
+
+#[cfg(test)]
+mod zotero_sqlite_tests {
+    use super::*;
+    use crate::test_helpers::test_zotero_db;
+
+    #[test]
+    fn citekey_from_zotero_sqlite_found() {
+        let zdb = test_zotero_db();
+        let ck = citekey_from_zotero_sqlite(zdb.conn(), "ABC12345").unwrap();
+        assert_eq!(ck, Some("demilloHintsTestData1978".into()));
+    }
+
+    #[test]
+    fn citekey_from_zotero_sqlite_not_found() {
+        let zdb = test_zotero_db();
+        let ck = citekey_from_zotero_sqlite(zdb.conn(), "ZZZZZZZZ").unwrap();
+        assert_eq!(ck, None);
+    }
+
+    #[test]
+    fn item_key_from_zotero_sqlite_found() {
+        let zdb = test_zotero_db();
+        let ik = item_key_from_zotero_sqlite(zdb.conn(), "demilloHintsTestData1978").unwrap();
+        assert_eq!(ik, Some("ABC12345".into()));
+    }
+
+    #[test]
+    fn item_key_from_zotero_sqlite_not_found() {
+        let zdb = test_zotero_db();
+        let ik = item_key_from_zotero_sqlite(zdb.conn(), "nonexistent2099").unwrap();
+        assert_eq!(ik, None);
+    }
+
+    #[test]
+    fn all_citekeys_from_zotero_sqlite_returns_all() {
+        let zdb = test_zotero_db();
+        let map = all_citekeys_from_zotero_sqlite(zdb.conn()).unwrap();
+        assert_eq!(map.len(), 2);
+        assert_eq!(map["demilloHintsTestData1978"], "ABC12345");
+        assert_eq!(map["artTesting2020"], "DEF67890");
+    }
+
+    #[test]
+    fn all_citekeys_from_zotero_sqlite_values_are_item_keys() {
+        let zdb = test_zotero_db();
+        let map = all_citekeys_from_zotero_sqlite(zdb.conn()).unwrap();
+        // Keys are citekeys, values are item keys (8-char)
+        for (ck, ik) in &map {
+            assert!(!ck.is_empty(), "Citekey should not be empty");
+            assert!(!ik.is_empty(), "Item key should not be empty");
+            assert_eq!(ik.len(), 8, "Item key should be 8 chars: {ik}");
+        }
+    }
+}

@@ -36,32 +36,6 @@ pub fn paper_resolve_pdf(args: &Value, ctx: &ServerContext) -> ToolCallResult {
     }
 }
 
-/// Search for a paper by title across enabled sources.
-///
-/// Currently delegates to the PDF resolver (which searches by title).
-/// Returns the resolved PDF URL if found.
-pub fn paper_search(args: &Value, ctx: &ServerContext) -> ToolCallResult {
-    let query = match args.get("query").and_then(|v| v.as_str()) {
-        Some(q) => q,
-        None => return ToolCallResult::error("Missing required parameter: query".into()),
-    };
-
-    let result = paper_resolver::resolve_pdf_with_config(
-        None, // no DOI
-        None, // no URL
-        Some(query),
-        &ctx.config.resolver,
-    );
-
-    match result {
-        Some(pdf) => ToolCallResult::text(format!(
-            "Found via {}: {}\nDownloadable: {}",
-            pdf.source, pdf.url, pdf.downloadable
-        )),
-        None => ToolCallResult::text(format!("No open-access PDF found for: {query}")),
-    }
-}
-
 /// Show the current paper resolver configuration.
 ///
 /// Lists enabled/disabled sources, their priority order, timeout, and email.
