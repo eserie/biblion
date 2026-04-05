@@ -90,6 +90,16 @@ just release X.Y.Z # Tag + push (triggers CI build + publish)
 | `ZOTERO_MCP_TRANSPORT` | `stdio` | `stdio` or `sse` |
 | `ZOTERO_MCP_CONFIG` | `~/.config/biblion/config.toml` | Optional TOML config |
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full human-facing guide. Key points for agents:
+
+- Branch from `main`, use conventional commits (`feat:`, `fix:`, `docs:`, `test:`)
+- Every new tool needs: handler + catalog entry + dispatch arm + test
+- Every new PDF source needs: async handler + SOURCE_NAMES entry + match arm
+- Run `just ci` before pushing (fmt + lint + test + doc)
+- Read the ADRs before proposing architectural changes
+
 ## What NOT to do
 
 - **Never write to zotero.sqlite directly** — all writes go through the Zotero Web API
