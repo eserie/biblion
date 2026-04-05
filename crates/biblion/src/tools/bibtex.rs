@@ -102,6 +102,7 @@ fn format_editors(creators: &[Creator]) -> String {
 fn escape_bibtex(s: &str) -> String {
     s.replace('&', r"\&")
         .replace('%', r"\%")
+        .replace('$', r"\$")
         .replace('#', r"\#")
         .replace('_', r"\_")
         .replace('{', r"\{")

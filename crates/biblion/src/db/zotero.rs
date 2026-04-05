@@ -180,8 +180,11 @@ impl ZoteroDb {
     /// This is a brute-force scan (~8ms on 2700 items). For better performance,
     /// we could add FTS5, but this is already 100x faster than the BBT RPC path.
     pub fn search_items(&self, query: &str, limit: usize) -> Result<Vec<(i64, String)>> {
-        // Escape LIKE wildcards in user input to prevent semantic injection
-        let escaped = query.replace('%', "\\%").replace('_', "\\_");
+        // Escape LIKE wildcards and the escape char itself in user input
+        let escaped = query
+            .replace('\\', "\\\\")
+            .replace('%', "\\%")
+            .replace('_', "\\_");
         let pattern = format!("%{escaped}%");
         let mut stmt = self.conn.prepare_cached(
             "SELECT DISTINCT i.itemID, i.key

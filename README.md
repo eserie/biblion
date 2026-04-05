@@ -1,7 +1,6 @@
 # biblion
 
 [![CI](https://github.com/eserie/biblion/actions/workflows/ci.yml/badge.svg)](https://github.com/eserie/biblion/actions/workflows/ci.yml)
-[![Crates.io](https://img.shields.io/crates/v/biblion)](https://crates.io/crates/biblion)
 [![codecov](https://codecov.io/gh/eserie/biblion/graph/badge.svg)](https://codecov.io/gh/eserie/biblion)
 [![Rust](https://img.shields.io/badge/rust-1.85+-orange?logo=rust)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
