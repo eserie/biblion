@@ -83,6 +83,35 @@ impl SourceEntry {
     }
 }
 
+/// Base URLs for each source — overridable for testing.
+#[derive(Debug, Clone)]
+#[non_exhaustive]
+pub struct Endpoints {
+    pub openalex: String,
+    pub core: String,
+    pub google_scholar: String,
+    pub unpaywall: String,
+    pub crossref: String,
+    pub zenodo: String,
+    pub ssrn: String,
+    pub semantic_scholar: String,
+}
+
+impl Default for Endpoints {
+    fn default() -> Self {
+        Self {
+            openalex: "https://api.openalex.org".into(),
+            core: "https://api.core.ac.uk/v3".into(),
+            google_scholar: "https://scholar.google.com".into(),
+            unpaywall: "https://api.unpaywall.org/v2".into(),
+            crossref: "https://api.crossref.org".into(),
+            zenodo: "https://zenodo.org/api".into(),
+            ssrn: "https://papers.ssrn.com".into(),
+            semantic_scholar: "https://api.semanticscholar.org/graph/v1".into(),
+        }
+    }
+}
+
 /// Configuration for the paper resolver.
 ///
 /// Controls which sources are queried, their priority (order in the vec),
@@ -103,6 +132,8 @@ pub struct ResolverConfig {
     pub sources: Vec<SourceEntry>,
     /// Extra domains to treat as non-downloadable (appended to defaults).
     pub extra_blocked_domains: Vec<String>,
+    /// Base URLs for each source — override for testing with mock servers.
+    pub endpoints: Endpoints,
 }
 
 /// All available source names.
@@ -132,6 +163,7 @@ impl Default for ResolverConfig {
                 })
                 .collect(),
             extra_blocked_domains: vec![],
+            endpoints: Endpoints::default(),
         }
     }
 }
@@ -261,6 +293,7 @@ pub async fn resolve_pdf_async(
         std::pin::Pin<Box<dyn std::future::Future<Output = Option<(u8, ResolvedPdf)>> + Send + 'a>>;
     let mut futures: Vec<PdfFuture<'_>> = Vec::new();
 
+    let ep = &config.endpoints;
     for source in &config.sources {
         if !source.enabled {
             continue;
@@ -270,35 +303,39 @@ pub async fn resolve_pdf_async(
         match source.name.as_str() {
             "arxiv" => {} // Already handled synchronously above
             "openalex" => futures.push(Box::pin(async move {
-                try_openalex(c, doi, title).await.map(|r| (pri, r))
+                try_openalex(c, doi, title, ep).await.map(|r| (pri, r))
             })),
             "core" => futures.push(Box::pin(async move {
-                try_core(c, doi, title).await.map(|r| (pri, r))
+                try_core(c, doi, title, ep).await.map(|r| (pri, r))
             })),
             "google_scholar" => futures.push(Box::pin(async move {
-                try_google_scholar(c, title).await.map(|r| (pri, r))
+                try_google_scholar(c, title, ep).await.map(|r| (pri, r))
             })),
             "unpaywall" => {
                 let email = config.email.clone();
                 futures.push(Box::pin(async move {
-                    try_unpaywall(c, doi, &email).await.map(|r| (pri, r))
+                    try_unpaywall(c, doi, &email, ep).await.map(|r| (pri, r))
                 }))
             }
             "crossref" => {
                 let email = config.email.clone();
                 let ua = config.user_agent.clone();
                 futures.push(Box::pin(async move {
-                    try_crossref(c, doi, &email, &ua).await.map(|r| (pri, r))
+                    try_crossref(c, doi, &email, &ua, ep)
+                        .await
+                        .map(|r| (pri, r))
                 }))
             }
             "zenodo" => futures.push(Box::pin(async move {
-                try_zenodo(c, title).await.map(|r| (pri, r))
+                try_zenodo(c, title, ep).await.map(|r| (pri, r))
             })),
             "ssrn" => futures.push(Box::pin(async move {
-                try_ssrn(c, title).await.map(|r| (pri, r))
+                try_ssrn(c, title, ep).await.map(|r| (pri, r))
             })),
             "semantic_scholar" => futures.push(Box::pin(async move {
-                try_semantic_scholar(c, doi, title).await.map(|r| (pri, r))
+                try_semantic_scholar(c, doi, title, ep)
+                    .await
+                    .map(|r| (pri, r))
             })),
             _ => {} // Unknown source name, skip
         }
@@ -344,10 +381,11 @@ async fn try_openalex(
     client: &reqwest::Client,
     doi: Option<&str>,
     title: Option<&str>,
+    endpoints: &Endpoints,
 ) -> Option<ResolvedPdf> {
     let resp = if let Some(doi) = doi {
         client
-            .get(format!("https://api.openalex.org/works/doi:{doi}"))
+            .get(format!("{}/works/doi:{doi}", endpoints.openalex))
             .query(&[("select", "open_access,locations,best_oa_location")])
             .send()
             .await
@@ -355,7 +393,7 @@ async fn try_openalex(
     } else {
         let title = title?;
         client
-            .get("https://api.openalex.org/works")
+            .get(format!("{}/works", endpoints.openalex))
             .query(&[
                 ("search", title),
                 ("per_page", "1"),
@@ -421,6 +459,7 @@ async fn try_core(
     client: &reqwest::Client,
     doi: Option<&str>,
     title: Option<&str>,
+    endpoints: &Endpoints,
 ) -> Option<ResolvedPdf> {
     let query = if let Some(doi) = doi {
         format!(r#"doi:"{doi}""#)
@@ -430,7 +469,7 @@ async fn try_core(
     };
 
     let resp = client
-        .get("https://api.core.ac.uk/v3/search/works")
+        .get(format!("{}/search/works", endpoints.core))
         .query(&[("q", &query), ("limit", &"1".to_string())])
         .send()
         .await
@@ -456,10 +495,14 @@ async fn try_core(
 // Google Scholar
 // ---------------------------------------------------------------------------
 
-async fn try_google_scholar(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {
+async fn try_google_scholar(
+    client: &reqwest::Client,
+    title: Option<&str>,
+    endpoints: &Endpoints,
+) -> Option<ResolvedPdf> {
     let title = title?;
     let resp = client
-        .get("https://scholar.google.com/scholar")
+        .get(format!("{}/scholar", endpoints.google_scholar))
         .query(&[("q", &format!("\"{title}\"")), ("num", &"5".to_string())])
         .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         .header("Accept", "text/html")
@@ -511,10 +554,11 @@ async fn try_unpaywall(
     client: &reqwest::Client,
     doi: Option<&str>,
     email: &str,
+    endpoints: &Endpoints,
 ) -> Option<ResolvedPdf> {
     let doi = doi?;
     let resp = client
-        .get(format!("https://api.unpaywall.org/v2/{doi}"))
+        .get(format!("{}/{doi}", endpoints.unpaywall))
         .query(&[("email", email)])
         .send()
         .await
@@ -560,10 +604,11 @@ async fn try_crossref(
     doi: Option<&str>,
     email: &str,
     user_agent: &str,
+    endpoints: &Endpoints,
 ) -> Option<ResolvedPdf> {
     let doi = doi?;
     let resp = client
-        .get(format!("https://api.crossref.org/works/{doi}"))
+        .get(format!("{}/works/{doi}", endpoints.crossref))
         .header("User-Agent", format!("{user_agent} (mailto:{email})"))
         .send()
         .await
@@ -614,10 +659,14 @@ async fn try_crossref(
 // Zenodo
 // ---------------------------------------------------------------------------
 
-async fn try_zenodo(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {
+async fn try_zenodo(
+    client: &reqwest::Client,
+    title: Option<&str>,
+    endpoints: &Endpoints,
+) -> Option<ResolvedPdf> {
     let title = title?;
     let resp = client
-        .get("https://zenodo.org/api/records")
+        .get(format!("{}/records", endpoints.zenodo))
         .query(&[("q", title), ("size", "3"), ("type", "publication")])
         .send()
         .await
@@ -661,10 +710,14 @@ async fn try_zenodo(client: &reqwest::Client, title: Option<&str>) -> Option<Res
 // SSRN
 // ---------------------------------------------------------------------------
 
-async fn try_ssrn(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {
+async fn try_ssrn(
+    client: &reqwest::Client,
+    title: Option<&str>,
+    endpoints: &Endpoints,
+) -> Option<ResolvedPdf> {
     let title = title?;
     let resp = client
-        .get("https://papers.ssrn.com/sol3/results.cfm")
+        .get(format!("{}/sol3/results.cfm", endpoints.ssrn))
         .query(&[("txtKey_Words", title), ("npage", "1")])
         .header("User-Agent", "Mozilla/5.0")
         .header("Accept", "text/html")
@@ -695,12 +748,11 @@ async fn try_semantic_scholar(
     client: &reqwest::Client,
     doi: Option<&str>,
     title: Option<&str>,
+    endpoints: &Endpoints,
 ) -> Option<ResolvedPdf> {
     let resp = if let Some(doi) = doi {
         client
-            .get(format!(
-                "https://api.semanticscholar.org/graph/v1/paper/DOI:{doi}"
-            ))
+            .get(format!("{}/paper/DOI:{doi}", endpoints.semantic_scholar))
             .query(&[("fields", "openAccessPdf")])
             .send()
             .await
@@ -708,7 +760,7 @@ async fn try_semantic_scholar(
     } else {
         let title = title?;
         client
-            .get("https://api.semanticscholar.org/graph/v1/paper/search")
+            .get(format!("{}/paper/search", endpoints.semantic_scholar))
             .query(&[
                 ("query", title),
                 ("limit", "1"),
@@ -924,5 +976,738 @@ mod config_tests {
         let r = result.unwrap();
         assert_eq!(r.source, "arxiv");
         assert!(r.downloadable);
+    }
+}
+
+#[cfg(test)]
+mod mock_tests {
+    use super::*;
+    use wiremock::matchers::{method, path_regex};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    /// Build a config that enables only the given source, pointing all endpoints
+    /// at the mock server.
+    fn single_source_config(source_name: &str, base_uri: &str) -> ResolverConfig {
+        let endpoints = Endpoints {
+            openalex: base_uri.into(),
+            core: base_uri.into(),
+            google_scholar: base_uri.into(),
+            unpaywall: base_uri.into(),
+            crossref: base_uri.into(),
+            zenodo: base_uri.into(),
+            ssrn: base_uri.into(),
+            semantic_scholar: base_uri.into(),
+        };
+        ResolverConfig {
+            sources: vec![SourceEntry::new(source_name, true)],
+            endpoints,
+            ..Default::default()
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // OpenAlex
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn openalex_doi_happy_path() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/works/doi:.*"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "best_oa_location": {
+                    "pdf_url": "https://example.edu/paper.pdf"
+                }
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("openalex", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.source, "openalex");
+        assert_eq!(r.url, "https://example.edu/paper.pdf");
+        assert!(r.downloadable);
+    }
+
+    #[tokio::test]
+    async fn openalex_title_search_happy_path() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/works$"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "results": [{
+                    "best_oa_location": {
+                        "pdf_url": "https://example.edu/search-result.pdf"
+                    }
+                }]
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("openalex", &server.uri());
+        let result = resolve_pdf_async(None, None, Some("mutation testing"), &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.source, "openalex");
+        assert_eq!(r.url, "https://example.edu/search-result.pdf");
+    }
+
+    #[tokio::test]
+    async fn openalex_oa_url_fallback() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/works/doi:.*"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "open_access": {
+                    "oa_url": "https://example.edu/open.pdf"
+                }
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("openalex", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.url, "https://example.edu/open.pdf");
+    }
+
+    #[tokio::test]
+    async fn openalex_locations_fallback() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/works/doi:.*"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "locations": [
+                    { "pdf_url": "https://example.edu/loc.pdf" }
+                ]
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("openalex", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.url, "https://example.edu/loc.pdf");
+    }
+
+    #[tokio::test]
+    async fn openalex_404_returns_none() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/works/doi:.*"))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("openalex", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn openalex_blocked_domain_not_downloadable() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/works/doi:.*"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "best_oa_location": {
+                    "pdf_url": "https://www.sciencedirect.com/paper.pdf"
+                }
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("openalex", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        let r = result.unwrap();
+        assert!(!r.downloadable);
+    }
+
+    // -----------------------------------------------------------------------
+    // CORE
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn core_doi_happy_path() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/search/works"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "results": [{
+                    "downloadUrl": "https://core.ac.uk/download/pdf/123.pdf"
+                }]
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("core", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.source, "core");
+        assert_eq!(r.url, "https://core.ac.uk/download/pdf/123.pdf");
+        assert!(r.downloadable);
+    }
+
+    #[tokio::test]
+    async fn core_title_search_happy_path() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/search/works"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "results": [{
+                    "downloadUrl": "https://core.ac.uk/download/pdf/456.pdf"
+                }]
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("core", &server.uri());
+        let result = resolve_pdf_async(None, None, Some("mutation testing"), &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.source, "core");
+    }
+
+    #[tokio::test]
+    async fn core_404_returns_none() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/search/works"))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("core", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn core_empty_results_returns_none() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/search/works"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "results": []
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("core", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        assert!(result.is_none());
+    }
+
+    // -----------------------------------------------------------------------
+    // Google Scholar
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn google_scholar_happy_path_academic_host() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/scholar"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(
+                r#"<html><body>
+                <a href="https://cs.stanford.edu/paper.pdf">[PDF]</a>
+                </body></html>"#,
+            ))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("google_scholar", &server.uri());
+        let result = resolve_pdf_async(None, None, Some("mutation testing"), &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.source, "google_scholar");
+        assert_eq!(r.url, "https://cs.stanford.edu/paper.pdf");
+        assert!(r.downloadable);
+    }
+
+    #[tokio::test]
+    async fn google_scholar_fallback_non_academic_pdf() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/scholar"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(
+                r#"<html><body>
+                <a href="https://example.com/paper.pdf">PDF</a>
+                </body></html>"#,
+            ))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("google_scholar", &server.uri());
+        let result = resolve_pdf_async(None, None, Some("mutation testing"), &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.source, "google_scholar");
+        assert_eq!(r.url, "https://example.com/paper.pdf");
+        assert!(r.downloadable);
+    }
+
+    #[tokio::test]
+    async fn google_scholar_blocked_pdf_skipped() {
+        let server = MockServer::start().await;
+        // Only blocked-domain PDFs — no downloadable ones
+        Mock::given(method("GET"))
+            .and(path_regex(r"/scholar"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(
+                r#"<html><body>
+                <a href="https://www.sciencedirect.com/paper.pdf">PDF</a>
+                </body></html>"#,
+            ))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("google_scholar", &server.uri());
+        let result = resolve_pdf_async(None, None, Some("mutation testing"), &config).await;
+        // The google_scholar handler skips blocked domains internally
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn google_scholar_no_title_returns_none() {
+        let config = single_source_config("google_scholar", "http://unused");
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn google_scholar_404_returns_none() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/scholar"))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("google_scholar", &server.uri());
+        let result = resolve_pdf_async(None, None, Some("mutation testing"), &config).await;
+        assert!(result.is_none());
+    }
+
+    // -----------------------------------------------------------------------
+    // Unpaywall
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn unpaywall_happy_path() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/10\.1234/test"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "best_oa_location": {
+                    "url_for_pdf": "https://europepmc.org/paper.pdf"
+                }
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("unpaywall", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.source, "unpaywall");
+        assert_eq!(r.url, "https://europepmc.org/paper.pdf");
+        assert!(r.downloadable);
+    }
+
+    #[tokio::test]
+    async fn unpaywall_oa_locations_fallback() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/10\.1234/test"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "oa_locations": [
+                    { "url_for_pdf": "https://repo.edu/fallback.pdf" }
+                ]
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("unpaywall", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.url, "https://repo.edu/fallback.pdf");
+    }
+
+    #[tokio::test]
+    async fn unpaywall_no_doi_returns_none() {
+        let config = single_source_config("unpaywall", "http://unused");
+        let result = resolve_pdf_async(None, None, Some("title"), &config).await;
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn unpaywall_404_returns_none() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/10\.1234/test"))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("unpaywall", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn unpaywall_blocked_domain_not_downloadable() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/10\.1234/test"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "best_oa_location": {
+                    "url_for_pdf": "https://link.springer.com/paper.pdf"
+                }
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("unpaywall", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        let r = result.unwrap();
+        assert!(!r.downloadable);
+    }
+
+    // -----------------------------------------------------------------------
+    // Crossref
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn crossref_primary_url_happy_path() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/works/10\.1234/test"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "message": {
+                    "resource": {
+                        "primary": {
+                            "URL": "https://publisher.org/article.pdf"
+                        }
+                    }
+                }
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("crossref", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.source, "crossref");
+        assert_eq!(r.url, "https://publisher.org/article.pdf");
+        assert!(r.downloadable);
+    }
+
+    #[tokio::test]
+    async fn crossref_link_array_fallback() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/works/10\.1234/test"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "message": {
+                    "link": [
+                        {
+                            "URL": "https://publisher.org/full.pdf",
+                            "content-type": "application/pdf"
+                        }
+                    ]
+                }
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("crossref", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.source, "crossref");
+        assert_eq!(r.url, "https://publisher.org/full.pdf");
+    }
+
+    #[tokio::test]
+    async fn crossref_no_doi_returns_none() {
+        let config = single_source_config("crossref", "http://unused");
+        let result = resolve_pdf_async(None, None, Some("title"), &config).await;
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn crossref_404_returns_none() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/works/10\.1234/test"))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("crossref", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        assert!(result.is_none());
+    }
+
+    // -----------------------------------------------------------------------
+    // Zenodo
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn zenodo_happy_path() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/records"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "hits": {
+                    "hits": [{
+                        "files": [{
+                            "key": "paper.pdf",
+                            "links": {
+                                "self": "https://zenodo.org/records/123/files/paper.pdf"
+                            }
+                        }]
+                    }]
+                }
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("zenodo", &server.uri());
+        let result = resolve_pdf_async(None, None, Some("mutation testing"), &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.source, "zenodo");
+        assert_eq!(r.url, "https://zenodo.org/records/123/files/paper.pdf");
+        assert!(r.downloadable);
+    }
+
+    #[tokio::test]
+    async fn zenodo_no_pdf_files_returns_none() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/records"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "hits": {
+                    "hits": [{
+                        "files": [{
+                            "key": "data.csv",
+                            "links": {
+                                "self": "https://zenodo.org/records/123/files/data.csv"
+                            }
+                        }]
+                    }]
+                }
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("zenodo", &server.uri());
+        let result = resolve_pdf_async(None, None, Some("mutation testing"), &config).await;
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn zenodo_no_title_returns_none() {
+        let config = single_source_config("zenodo", "http://unused");
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn zenodo_404_returns_none() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/records"))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("zenodo", &server.uri());
+        let result = resolve_pdf_async(None, None, Some("mutation testing"), &config).await;
+        assert!(result.is_none());
+    }
+
+    // -----------------------------------------------------------------------
+    // SSRN
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn ssrn_happy_path() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/sol3/results\.cfm"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(
+                r#"<html><body>
+                <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1234567">Paper</a>
+                </body></html>"#,
+            ))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("ssrn", &server.uri());
+        let result = resolve_pdf_async(None, None, Some("volatility modeling"), &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.source, "ssrn");
+        assert_eq!(
+            r.url,
+            "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1234567"
+        );
+        // SSRN never serves direct PDFs
+        assert!(!r.downloadable);
+    }
+
+    #[tokio::test]
+    async fn ssrn_no_match_returns_none() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/sol3/results\.cfm"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_string(r#"<html><body>No results found.</body></html>"#),
+            )
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("ssrn", &server.uri());
+        let result = resolve_pdf_async(None, None, Some("nonexistent paper"), &config).await;
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn ssrn_no_title_returns_none() {
+        let config = single_source_config("ssrn", "http://unused");
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        assert!(result.is_none());
+    }
+
+    // -----------------------------------------------------------------------
+    // Semantic Scholar
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn semantic_scholar_doi_happy_path() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/paper/DOI:.*"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "openAccessPdf": {
+                    "url": "https://example.edu/s2paper.pdf"
+                }
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("semantic_scholar", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.source, "semantic_scholar");
+        assert_eq!(r.url, "https://example.edu/s2paper.pdf");
+        assert!(r.downloadable);
+    }
+
+    #[tokio::test]
+    async fn semantic_scholar_title_search_happy_path() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/paper/search"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "data": [{
+                    "openAccessPdf": {
+                        "url": "https://example.edu/s2search.pdf"
+                    }
+                }]
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("semantic_scholar", &server.uri());
+        let result = resolve_pdf_async(None, None, Some("mutation testing"), &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.source, "semantic_scholar");
+        assert_eq!(r.url, "https://example.edu/s2search.pdf");
+    }
+
+    #[tokio::test]
+    async fn semantic_scholar_disclaimer_arxiv_fallback() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/paper/DOI:.*"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "openAccessPdf": {
+                    "disclaimer": "See https://arxiv.org/abs/2105.15183 for the open access version."
+                }
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("semantic_scholar", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.source, "semantic_scholar");
+        assert_eq!(r.url, "https://arxiv.org/pdf/2105.15183.pdf");
+        assert!(r.downloadable);
+    }
+
+    #[tokio::test]
+    async fn semantic_scholar_disclaimer_non_arxiv_url() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/paper/DOI:.*"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "openAccessPdf": {
+                    "disclaimer": "Available at https://example.edu/paper.pdf for download."
+                }
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("semantic_scholar", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        let r = result.unwrap();
+        assert_eq!(r.source, "semantic_scholar");
+        assert!(r.url.contains("example.edu"));
+    }
+
+    #[tokio::test]
+    async fn semantic_scholar_404_returns_none() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/paper/DOI:.*"))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("semantic_scholar", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn semantic_scholar_no_oa_pdf_returns_none() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/paper/DOI:.*"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "title": "Some paper"
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("semantic_scholar", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn semantic_scholar_blocked_domain_not_downloadable() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/paper/DOI:.*"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "openAccessPdf": {
+                    "url": "https://ieeexplore.ieee.org/paper.pdf"
+                }
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("semantic_scholar", &server.uri());
+        let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
+        let r = result.unwrap();
+        assert!(!r.downloadable);
     }
 }
