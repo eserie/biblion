@@ -1,0 +1,37 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="MCP (Model Context Protocol) JSON-RPC types."><title>biblion::protocol - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="biblion" data-themes="" data-resource-suffix="" data-rustdoc-version="1.89.0 (29483883e 2025-08-04) (Homebrew)" data-channel="1.89.0" data-search-js="search-92309212.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-4e99c027.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"><style>
+  /* Biblion rustdoc theme overrides */
+  :root {
+    --main-background-color: #F8F7F4;
+    --main-color: #1C1917;
+    --headings-border-bottom-color: #E7E5E4;
+    --color: #1C1917;
+    --link-color: #B45309;
+    --sidebar-background-color: #1E3A8A;
+    --sidebar-link-color: rgba(255,255,255,0.85);
+    --sidebar-current-link-background-color: rgba(255,255,255,0.12);
+  }
+
+  body {
+    font-family: 'Bricolage Grotesque', Georgia, serif !important;
+  }
+
+  .sidebar { background-color: #1E3A8A !important; }
+  .sidebar .location { color: white !important; }
+  .sidebar a { color: rgba(255,255,255,0.8) !important; }
+  .sidebar a:hover { color: white !important; }
+  .sidebar .block .current a { color: white !important; background: rgba(255,255,255,0.1) !important; }
+
+  .main-heading h1 { color: #1E3A8A !important; }
+  a { color: #B45309 !important; }
+  a:hover { color: #92400E !important; }
+
+  pre, code { font-family: 'JetBrains Mono', monospace !important; }
+  .docblock { font-size: 15px; line-height: 1.7; }
+  .docblock code { background: rgba(30,58,138,0.06); padding: 1px 4px; border-radius: 2px; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+</head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../biblion/index.html">biblion</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module protocol</a></h2><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate biblion</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">biblion</a></div><h1>Module <span>protocol</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/biblion/protocol.rs.html#1-279">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>MCP (Model Context Protocol) JSON-RPC types.</p>
+<p>Implements the subset of MCP 2024-11-05 needed for a stdio-based tool server.
+Adapted from ox-mcp (oxymake).</p>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.InitializeResult.html" title="struct biblion::protocol::InitializeResult">Initialize<wbr>Result</a></dt><dt><a class="struct" href="struct.JsonRpcError.html" title="struct biblion::protocol::JsonRpcError">Json<wbr>RpcError</a></dt><dt><a class="struct" href="struct.JsonRpcRequest.html" title="struct biblion::protocol::JsonRpcRequest">Json<wbr>RpcRequest</a></dt><dt><a class="struct" href="struct.JsonRpcResponse.html" title="struct biblion::protocol::JsonRpcResponse">Json<wbr>RpcResponse</a></dt><dt><a class="struct" href="struct.ServerCapabilities.html" title="struct biblion::protocol::ServerCapabilities">Server<wbr>Capabilities</a></dt><dt><a class="struct" href="struct.ServerInfo.html" title="struct biblion::protocol::ServerInfo">Server<wbr>Info</a></dt><dt><a class="struct" href="struct.ToolCallParams.html" title="struct biblion::protocol::ToolCallParams">Tool<wbr>Call<wbr>Params</a></dt><dt><a class="struct" href="struct.ToolCallResult.html" title="struct biblion::protocol::ToolCallResult">Tool<wbr>Call<wbr>Result</a></dt><dt><a class="struct" href="struct.ToolContent.html" title="struct biblion::protocol::ToolContent">Tool<wbr>Content</a></dt><dt><a class="struct" href="struct.ToolDefinition.html" title="struct biblion::protocol::ToolDefinition">Tool<wbr>Definition</a></dt><dt><a class="struct" href="struct.ToolsCapability.html" title="struct biblion::protocol::ToolsCapability">Tools<wbr>Capability</a></dt><dt><a class="struct" href="struct.ToolsListResult.html" title="struct biblion::protocol::ToolsListResult">Tools<wbr>List<wbr>Result</a></dt></dl></section></div></main></body></html>

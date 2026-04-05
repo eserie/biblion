@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["format_apa","format_apa_authors","format_bibliography","format_bibliography_list","format_ieee","format_ieee_authors","is_native_style"]};

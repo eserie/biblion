@@ -1,0 +1,57 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Native BibTeX/BibLaTeX export — no BBT dependency."><title>biblion::tools::bibtex - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="biblion" data-themes="" data-resource-suffix="" data-rustdoc-version="1.89.0 (29483883e 2025-08-04) (Homebrew)" data-channel="1.89.0" data-search-js="search-92309212.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"><style>
+  /* Biblion rustdoc theme overrides */
+  :root {
+    --main-background-color: #F8F7F4;
+    --main-color: #1C1917;
+    --headings-border-bottom-color: #E7E5E4;
+    --color: #1C1917;
+    --link-color: #B45309;
+    --sidebar-background-color: #1E3A8A;
+    --sidebar-link-color: rgba(255,255,255,0.85);
+    --sidebar-current-link-background-color: rgba(255,255,255,0.12);
+  }
+
+  body {
+    font-family: 'Bricolage Grotesque', Georgia, serif !important;
+  }
+
+  .sidebar { background-color: #1E3A8A !important; }
+  .sidebar .location { color: white !important; }
+  .sidebar a { color: rgba(255,255,255,0.8) !important; }
+  .sidebar a:hover { color: white !important; }
+  .sidebar .block .current a { color: white !important; background: rgba(255,255,255,0.1) !important; }
+
+  .main-heading h1 { color: #1E3A8A !important; }
+  a { color: #B45309 !important; }
+  a:hover { color: #92400E !important; }
+
+  pre, code { font-family: 'JetBrains Mono', monospace !important; }
+  .docblock { font-size: 15px; line-height: 1.7; }
+  .docblock code { background: rgba(30,58,138,0.06); padding: 1px 4px; border-radius: 2px; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+</head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../biblion/index.html">biblion</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module bibtex</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#why-native" title="Why native?">Why native?</a></li><li><a href="#bibtex-format" title="BibTeX format">BibTeX format</a></li><li><a href="#item-type-mapping" title="Item type mapping">Item type mapping</a></li></ul><h3><a href="#functions">Module Items</a></h3><ul class="block"><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="../index.html">In biblion::<wbr>tools</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">biblion</a>::<wbr><a href="../index.html">tools</a></div><h1>Module <span>bibtex</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/biblion/tools/bibtex.rs.html#1-388">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Native BibTeX/BibLaTeX export — no BBT dependency.</p>
+<h2 id="why-native"><a class="doc-anchor" href="#why-native">§</a>Why native?</h2>
+<p>BBT’s JSON-RPC export takes ~300ms per call (JavaScript inside Electron).
+We can generate equivalent BibTeX in &lt;0.1ms from SQLite data.</p>
+<h2 id="bibtex-format"><a class="doc-anchor" href="#bibtex-format">§</a>BibTeX format</h2><div class="example-wrap"><pre class="language-bibtex"><code>@article{demilloHintsTestData1978,
+  author    = {DeMillo, Richard A. and Lipton, Richard J. and Sayward, Fred G.},
+  title     = {Hints on Test Data Selection: Help for the Practicing Programmer},
+  journal   = {Computer},
+  year      = {1978},
+  volume    = {11},
+  number    = {4},
+  pages     = {34--41},
+  doi       = {10.1109/C-M.1978.218136},
+}</code></pre></div><h2 id="item-type-mapping"><a class="doc-anchor" href="#item-type-mapping">§</a>Item type mapping</h2><div><table><thead><tr><th>Zotero type</th><th>BibTeX type</th><th>BibLaTeX type</th></tr></thead><tbody>
+<tr><td>journalArticle</td><td>@article</td><td>@article</td></tr>
+<tr><td>book</td><td>@book</td><td>@book</td></tr>
+<tr><td>bookSection</td><td>@incollection</td><td>@incollection</td></tr>
+<tr><td>conferencePaper</td><td>@inproceedings</td><td>@inproceedings</td></tr>
+<tr><td>thesis</td><td>@phdthesis</td><td>@thesis</td></tr>
+<tr><td>report</td><td>@techreport</td><td>@report</td></tr>
+<tr><td>webpage</td><td>@misc</td><td>@online</td></tr>
+<tr><td>* (other)</td><td>@misc</td><td>@misc</td></tr>
+</tbody></table>
+</div></div></details><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.biblatex_type.html" title="fn biblion::tools::bibtex::biblatex_type">biblatex_<wbr>type</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Map Zotero item types to BibLaTeX entry types (more granular).</dd><dt><a class="fn" href="fn.bibtex_type.html" title="fn biblion::tools::bibtex::bibtex_type">bibtex_<wbr>type</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Map Zotero item types to BibTeX entry types.</dd><dt><a class="fn" href="fn.escape_bibtex.html" title="fn biblion::tools::bibtex::escape_bibtex">escape_<wbr>bibtex</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Escape special BibTeX characters in a string value.</dd><dt><a class="fn" href="fn.format_authors.html" title="fn biblion::tools::bibtex::format_authors">format_<wbr>authors</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Format creators as BibTeX <code>author</code> field.</dd><dt><a class="fn" href="fn.format_editors.html" title="fn biblion::tools::bibtex::format_editors">format_<wbr>editors</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Format creators as BibTeX <code>editor</code> field.</dd><dt><a class="fn" href="fn.item_to_bibtex.html" title="fn biblion::tools::bibtex::item_to_bibtex">item_<wbr>to_<wbr>bibtex</a></dt><dd>Generate a BibTeX entry for a single item.</dd><dt><a class="fn" href="fn.items_to_bibtex.html" title="fn biblion::tools::bibtex::items_to_bibtex">items_<wbr>to_<wbr>bibtex</a></dt><dd>Generate BibTeX for multiple items.</dd></dl></section></div></main></body></html>

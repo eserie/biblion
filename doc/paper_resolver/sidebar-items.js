@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["SOURCE_NAMES"],"fn":["resolve_pdf","resolve_pdf_async","resolve_pdf_async_with_report","resolve_pdf_with_config","resolve_pdf_with_report"],"struct":["Endpoints","ResolveReport","ResolvedPdf","ResolverConfig","SourceEntry"]};

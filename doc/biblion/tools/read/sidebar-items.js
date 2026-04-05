@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["zotero_get_collection_items","zotero_get_collections","zotero_get_item","zotero_get_notes","zotero_get_pdf_path","zotero_get_recent","zotero_list_attachments","zotero_search","zotero_status"]};

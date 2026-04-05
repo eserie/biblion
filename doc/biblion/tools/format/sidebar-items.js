@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["extract_year","format_creators","format_item_summary","html_to_text"]};

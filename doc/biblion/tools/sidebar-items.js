@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["check_writes_enabled","handle_tool_call","optional_str","optional_u64","required_str","resolve_citekey","tool","tool_catalog"],"mod":["bibliography","bibtex","format","paper","read","write"]};

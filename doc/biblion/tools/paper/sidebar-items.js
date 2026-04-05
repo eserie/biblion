@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["paper_resolve_pdf","paper_source_status"]};

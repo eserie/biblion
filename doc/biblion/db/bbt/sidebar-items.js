@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["all_citekeys_from_zotero_sqlite","citekey_from_zotero_sqlite","item_key_from_zotero_sqlite"],"struct":["BbtDb"]};

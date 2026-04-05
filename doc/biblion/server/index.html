@@ -1,0 +1,51 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="MCP server — stdio JSON-RPC event loop."><title>biblion::server - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="biblion" data-themes="" data-resource-suffix="" data-rustdoc-version="1.89.0 (29483883e 2025-08-04) (Homebrew)" data-channel="1.89.0" data-search-js="search-92309212.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-4e99c027.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"><style>
+  /* Biblion rustdoc theme overrides */
+  :root {
+    --main-background-color: #F8F7F4;
+    --main-color: #1C1917;
+    --headings-border-bottom-color: #E7E5E4;
+    --color: #1C1917;
+    --link-color: #B45309;
+    --sidebar-background-color: #1E3A8A;
+    --sidebar-link-color: rgba(255,255,255,0.85);
+    --sidebar-current-link-background-color: rgba(255,255,255,0.12);
+  }
+
+  body {
+    font-family: 'Bricolage Grotesque', Georgia, serif !important;
+  }
+
+  .sidebar { background-color: #1E3A8A !important; }
+  .sidebar .location { color: white !important; }
+  .sidebar a { color: rgba(255,255,255,0.8) !important; }
+  .sidebar a:hover { color: white !important; }
+  .sidebar .block .current a { color: white !important; background: rgba(255,255,255,0.1) !important; }
+
+  .main-heading h1 { color: #1E3A8A !important; }
+  a { color: #B45309 !important; }
+  a:hover { color: #92400E !important; }
+
+  pre, code { font-family: 'JetBrains Mono', monospace !important; }
+  .docblock { font-size: 15px; line-height: 1.7; }
+  .docblock code { background: rgba(30,58,138,0.06); padding: 1px 4px; border-radius: 2px; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+</head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../biblion/index.html">biblion</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module server</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#architecture" title="Architecture">Architecture</a></li><li><a href="#flow" title="Flow">Flow</a></li></ul><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#constants" title="Constants">Constants</a></li><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate biblion</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">biblion</a></div><h1>Module <span>server</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/biblion/server.rs.html#1-360">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>MCP server — stdio JSON-RPC event loop.</p>
+<h2 id="architecture"><a class="doc-anchor" href="#architecture">§</a>Architecture</h2>
+<p>This is a synchronous, blocking server that reads JSON-RPC requests
+line-by-line from stdin and writes responses to stdout. This is the
+same pattern as ox-mcp (oxymake) and msgvault (Go).</p>
+<p>Why synchronous? Because our hot path is SQLite reads, which are
+inherently blocking and complete in &lt;1ms. Adding an async runtime
+would add complexity for zero benefit on the common path. The few
+tools that need network (BBT RPC, Zotero Web API, PDF resolver)
+use <code>tokio::runtime::Builder::new_current_thread()</code> on demand.</p>
+<h2 id="flow"><a class="doc-anchor" href="#flow">§</a>Flow</h2><div class="example-wrap"><pre class="language-text"><code>stdin → read_line → parse JSON-RPC → dispatch → tool handler → JSON-RPC → stdout
+                                        │
+                          ┌──────────────┼──────────────┐
+                          │              │              │
+                     initialize    tools/list     tools/call
+                                                       │
+                                                 tools::handle()</code></pre></div></div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.ServerContext.html" title="struct biblion::server::ServerContext">Server<wbr>Context</a></dt><dd>Runtime context shared across all tool calls.</dd></dl><h2 id="constants" class="section-header">Constants<a href="#constants" class="anchor">§</a></h2><dl class="item-table"><dt><a class="constant" href="constant.SERVER_INSTRUCTIONS.html" title="constant biblion::server::SERVER_INSTRUCTIONS">SERVER_<wbr>INSTRUCTIONS</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Instructions sent to agents on MCP connection.</dd></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.dispatch.html" title="fn biblion::server::dispatch">dispatch</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Dispatch a JSON-RPC request to the appropriate handler.
+Shared between stdio and SSE transports.</dd><dt><a class="fn" href="fn.handle_initialize.html" title="fn biblion::server::handle_initialize">handle_<wbr>initialize</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.handle_tools_call.html" title="fn biblion::server::handle_tools_call">handle_<wbr>tools_<wbr>call</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.handle_tools_list.html" title="fn biblion::server::handle_tools_list">handle_<wbr>tools_<wbr>list</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.level_enabled.html" title="fn biblion::server::level_enabled">level_<wbr>enabled</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.log.html" title="fn biblion::server::log">log</a></dt><dt><a class="fn" href="fn.run_stdio.html" title="fn biblion::server::run_stdio">run_<wbr>stdio</a></dt><dd>Run the MCP server over stdio (blocking).</dd><dt><a class="fn" href="fn.write_response.html" title="fn biblion::server::write_response">write_<wbr>response</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt></dl></section></div></main></body></html>

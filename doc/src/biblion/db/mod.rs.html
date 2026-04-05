@@ -1,0 +1,152 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crates/biblion/src/db/mod.rs`."><title>mod.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="biblion" data-themes="" data-resource-suffix="" data-rustdoc-version="1.89.0 (29483883e 2025-08-04) (Homebrew)" data-channel="1.89.0" data-search-js="search-92309212.js" data-settings-js="settings-5514c975.js" ><script src="../../../static.files/storage-4e99c027.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"><style>
+  /* Biblion rustdoc theme overrides */
+  :root {
+    --main-background-color: #F8F7F4;
+    --main-color: #1C1917;
+    --headings-border-bottom-color: #E7E5E4;
+    --color: #1C1917;
+    --link-color: #B45309;
+    --sidebar-background-color: #1E3A8A;
+    --sidebar-link-color: rgba(255,255,255,0.85);
+    --sidebar-current-link-background-color: rgba(255,255,255,0.12);
+  }
+
+  body {
+    font-family: 'Bricolage Grotesque', Georgia, serif !important;
+  }
+
+  .sidebar { background-color: #1E3A8A !important; }
+  .sidebar .location { color: white !important; }
+  .sidebar a { color: rgba(255,255,255,0.8) !important; }
+  .sidebar a:hover { color: white !important; }
+  .sidebar .block .current a { color: white !important; background: rgba(255,255,255,0.1) !important; }
+
+  .main-heading h1 { color: #1E3A8A !important; }
+  a { color: #B45309 !important; }
+  a:hover { color: #92400E !important; }
+
+  pre, code { font-family: 'JetBrains Mono', monospace !important; }
+  .docblock { font-size: 15px; line-height: 1.7; }
+  .docblock code { background: rgba(30,58,138,0.06); padding: 1px 4px; border-radius: 2px; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+</head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">biblion/db/</div>mod.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Database access layer — direct SQLite reads on Zotero's databases.
+<a href=#2 id=2 data-nosnippet>2</a>//!
+<a href=#3 id=3 data-nosnippet>3</a>//! # The key insight
+<a href=#4 id=4 data-nosnippet>4</a>//!
+<a href=#5 id=5 data-nosnippet>5</a>//! Zotero stores everything in SQLite. The Python MCP server was slow because
+<a href=#6 id=6 data-nosnippet>6</a>//! it went through BBT JSON-RPC (a JavaScript plugin inside Zotero's Electron
+<a href=#7 id=7 data-nosnippet>7</a>//! app) to read this same data. By reading SQLite directly, we eliminate the
+<a href=#8 id=8 data-nosnippet>8</a>//! dominant bottleneck: ~300ms per BBT RPC call → &lt;1ms per SQLite query.
+<a href=#9 id=9 data-nosnippet>9</a>//!
+<a href=#10 id=10 data-nosnippet>10</a>//! # Two databases
+<a href=#11 id=11 data-nosnippet>11</a>//!
+<a href=#12 id=12 data-nosnippet>12</a>//! - **`zotero.sqlite`** — all item metadata, collections, tags, creators,
+<a href=#13 id=13 data-nosnippet>13</a>//!   attachments, notes. Uses an EAV (Entity-Attribute-Value) schema:
+<a href=#14 id=14 data-nosnippet>14</a>//!   `items → itemData → itemDataValues` with field IDs mapped via `fields`.
+<a href=#15 id=15 data-nosnippet>15</a>//!
+<a href=#16 id=16 data-nosnippet>16</a>//! - **`better-bibtex.migrated`** — citekey assignments. Maps Zotero item keys
+<a href=#17 id=17 data-nosnippet>17</a>//!   (like "9MS26VH5") to citation keys (like "demilloHintsTestData1978").
+<a href=#18 id=18 data-nosnippet>18</a>//!   This file may not exist if BBT isn't installed.
+<a href=#19 id=19 data-nosnippet>19</a>//!
+<a href=#20 id=20 data-nosnippet>20</a>//! Both are opened read-only. We never write to Zotero's databases directly —
+<a href=#21 id=21 data-nosnippet>21</a>//! writes go through the Zotero Web API.
+<a href=#22 id=22 data-nosnippet>22</a>
+<a href=#23 id=23 data-nosnippet>23</a></span><span class="kw">pub mod </span>bbt;
+<a href=#24 id=24 data-nosnippet>24</a><span class="kw">pub mod </span>zotero;
+<a href=#25 id=25 data-nosnippet>25</a>
+<a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>anyhow::Result;
+<a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>std::path::Path;
+<a href=#28 id=28 data-nosnippet>28</a>
+<a href=#29 id=29 data-nosnippet>29</a><span class="doccomment">/// Holds connections to both Zotero databases.
+<a href=#30 id=30 data-nosnippet>30</a>///
+<a href=#31 id=31 data-nosnippet>31</a>/// Created once at startup and shared (by reference) across all tool calls.
+<a href=#32 id=32 data-nosnippet>32</a>/// Both connections are read-only and held open for the process lifetime.
+<a href=#33 id=33 data-nosnippet>33</a></span><span class="kw">pub struct </span>DbPool {
+<a href=#34 id=34 data-nosnippet>34</a>    <span class="kw">pub </span>zotero: <span class="prelude-ty">Option</span>&lt;zotero::ZoteroDb&gt;,
+<a href=#35 id=35 data-nosnippet>35</a>    <span class="kw">pub </span>bbt: <span class="prelude-ty">Option</span>&lt;bbt::BbtDb&gt;,
+<a href=#36 id=36 data-nosnippet>36</a>}
+<a href=#37 id=37 data-nosnippet>37</a>
+<a href=#38 id=38 data-nosnippet>38</a><span class="kw">impl </span>DbPool {
+<a href=#39 id=39 data-nosnippet>39</a>    <span class="doccomment">/// Open both databases. Non-fatal: if a database doesn't exist or can't
+<a href=#40 id=40 data-nosnippet>40</a>    /// be opened, the corresponding field is None and tools that need it
+<a href=#41 id=41 data-nosnippet>41</a>    /// return a clear error.
+<a href=#42 id=42 data-nosnippet>42</a>    </span><span class="kw">pub fn </span>open(zotero_path: <span class="kw-2">&amp;</span>Path, bbt_path: <span class="kw-2">&amp;</span>Path) -&gt; <span class="self">Self </span>{
+<a href=#43 id=43 data-nosnippet>43</a>        <span class="kw">let </span>zotero = <span class="kw">match </span>zotero::ZoteroDb::open(zotero_path) {
+<a href=#44 id=44 data-nosnippet>44</a>            <span class="prelude-val">Ok</span>(db) =&gt; <span class="prelude-val">Some</span>(db),
+<a href=#45 id=45 data-nosnippet>45</a>            <span class="prelude-val">Err</span>(e) =&gt; {
+<a href=#46 id=46 data-nosnippet>46</a>                <span class="macro">eprintln!</span>(<span class="string">"[biblion] Warning: cannot open zotero.sqlite: {e}"</span>);
+<a href=#47 id=47 data-nosnippet>47</a>                <span class="prelude-val">None
+<a href=#48 id=48 data-nosnippet>48</a>            </span>}
+<a href=#49 id=49 data-nosnippet>49</a>        };
+<a href=#50 id=50 data-nosnippet>50</a>        <span class="kw">let </span>bbt = <span class="kw">match </span>bbt::BbtDb::open(bbt_path) {
+<a href=#51 id=51 data-nosnippet>51</a>            <span class="prelude-val">Ok</span>(db) =&gt; <span class="prelude-val">Some</span>(db),
+<a href=#52 id=52 data-nosnippet>52</a>            <span class="prelude-val">Err</span>(e) =&gt; {
+<a href=#53 id=53 data-nosnippet>53</a>                <span class="macro">eprintln!</span>(<span class="string">"[biblion] Warning: cannot open better-bibtex.migrated: {e}"</span>);
+<a href=#54 id=54 data-nosnippet>54</a>                <span class="prelude-val">None
+<a href=#55 id=55 data-nosnippet>55</a>            </span>}
+<a href=#56 id=56 data-nosnippet>56</a>        };
+<a href=#57 id=57 data-nosnippet>57</a>        <span class="self">Self </span>{ zotero, bbt }
+<a href=#58 id=58 data-nosnippet>58</a>    }
+<a href=#59 id=59 data-nosnippet>59</a>
+<a href=#60 id=60 data-nosnippet>60</a>    <span class="doccomment">/// Create an empty pool (for testing when no databases are available).
+<a href=#61 id=61 data-nosnippet>61</a>    </span><span class="kw">pub fn </span>empty() -&gt; <span class="self">Self </span>{
+<a href=#62 id=62 data-nosnippet>62</a>        <span class="self">Self </span>{
+<a href=#63 id=63 data-nosnippet>63</a>            zotero: <span class="prelude-val">None</span>,
+<a href=#64 id=64 data-nosnippet>64</a>            bbt: <span class="prelude-val">None</span>,
+<a href=#65 id=65 data-nosnippet>65</a>        }
+<a href=#66 id=66 data-nosnippet>66</a>    }
+<a href=#67 id=67 data-nosnippet>67</a>
+<a href=#68 id=68 data-nosnippet>68</a>    <span class="doccomment">/// Get the Zotero database, returning a clear error if unavailable.
+<a href=#69 id=69 data-nosnippet>69</a>    </span><span class="kw">pub fn </span>zotero(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>zotero::ZoteroDb&gt; {
+<a href=#70 id=70 data-nosnippet>70</a>        <span class="self">self</span>.zotero.as_ref().ok_or_else(|| {
+<a href=#71 id=71 data-nosnippet>71</a>            <span class="macro">anyhow::anyhow!</span>(<span class="string">"Zotero database not available. Check ZOTERO_SQLITE_PATH."</span>)
+<a href=#72 id=72 data-nosnippet>72</a>        })
+<a href=#73 id=73 data-nosnippet>73</a>    }
+<a href=#74 id=74 data-nosnippet>74</a>
+<a href=#75 id=75 data-nosnippet>75</a>    <span class="doccomment">/// Get the BBT database, returning a clear error if unavailable.
+<a href=#76 id=76 data-nosnippet>76</a>    </span><span class="kw">pub fn </span>bbt(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>bbt::BbtDb&gt; {
+<a href=#77 id=77 data-nosnippet>77</a>        <span class="self">self</span>.bbt.as_ref().ok_or_else(|| {
+<a href=#78 id=78 data-nosnippet>78</a>            <span class="macro">anyhow::anyhow!</span>(<span class="string">"Better BibTeX database not available. Check BBT_MIGRATED_PATH."</span>)
+<a href=#79 id=79 data-nosnippet>79</a>        })
+<a href=#80 id=80 data-nosnippet>80</a>    }
+<a href=#81 id=81 data-nosnippet>81</a>
+<a href=#82 id=82 data-nosnippet>82</a>    <span class="doccomment">/// Resolve a citekey to an item key, trying all available sources.
+<a href=#83 id=83 data-nosnippet>83</a>    ///
+<a href=#84 id=84 data-nosnippet>84</a>    /// Priority:
+<a href=#85 id=85 data-nosnippet>85</a>    /// 1. `zotero.sqlite` citationKey field (most complete, 99.9% coverage)
+<a href=#86 id=86 data-nosnippet>86</a>    /// 2. `better-bibtex.migrated` (for items not yet synced to Zotero)
+<a href=#87 id=87 data-nosnippet>87</a>    </span><span class="kw">pub fn </span>item_key_for_citekey(<span class="kw-2">&amp;</span><span class="self">self</span>, citekey: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;String&gt;&gt; {
+<a href=#88 id=88 data-nosnippet>88</a>        <span class="comment">// Try zotero.sqlite first (most reliable)
+<a href=#89 id=89 data-nosnippet>89</a>        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(zdb) = <span class="kw-2">&amp;</span><span class="self">self</span>.zotero
+<a href=#90 id=90 data-nosnippet>90</a>            &amp;&amp; <span class="kw">let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(key)) = bbt::item_key_from_zotero_sqlite(zdb.conn(), citekey)
+<a href=#91 id=91 data-nosnippet>91</a>        {
+<a href=#92 id=92 data-nosnippet>92</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(key));
+<a href=#93 id=93 data-nosnippet>93</a>        }
+<a href=#94 id=94 data-nosnippet>94</a>        <span class="comment">// Fallback to BBT migrated
+<a href=#95 id=95 data-nosnippet>95</a>        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(bdb) = <span class="kw-2">&amp;</span><span class="self">self</span>.bbt
+<a href=#96 id=96 data-nosnippet>96</a>            &amp;&amp; <span class="kw">let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(key)) = bdb.item_key_for_citekey(citekey)
+<a href=#97 id=97 data-nosnippet>97</a>        {
+<a href=#98 id=98 data-nosnippet>98</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(key));
+<a href=#99 id=99 data-nosnippet>99</a>        }
+<a href=#100 id=100 data-nosnippet>100</a>        <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
+<a href=#101 id=101 data-nosnippet>101</a>    }
+<a href=#102 id=102 data-nosnippet>102</a>
+<a href=#103 id=103 data-nosnippet>103</a>    <span class="doccomment">/// Resolve an item key to a citekey, trying all available sources.
+<a href=#104 id=104 data-nosnippet>104</a>    </span><span class="kw">pub fn </span>citekey_for_item_key(<span class="kw-2">&amp;</span><span class="self">self</span>, item_key: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;String&gt; {
+<a href=#105 id=105 data-nosnippet>105</a>        <span class="comment">// Try zotero.sqlite first
+<a href=#106 id=106 data-nosnippet>106</a>        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(zdb) = <span class="kw-2">&amp;</span><span class="self">self</span>.zotero
+<a href=#107 id=107 data-nosnippet>107</a>            &amp;&amp; <span class="kw">let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(ck)) = bbt::citekey_from_zotero_sqlite(zdb.conn(), item_key)
+<a href=#108 id=108 data-nosnippet>108</a>        {
+<a href=#109 id=109 data-nosnippet>109</a>            <span class="kw">return </span><span class="prelude-val">Some</span>(ck);
+<a href=#110 id=110 data-nosnippet>110</a>        }
+<a href=#111 id=111 data-nosnippet>111</a>        <span class="comment">// Fallback to BBT migrated
+<a href=#112 id=112 data-nosnippet>112</a>        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(bdb) = <span class="kw-2">&amp;</span><span class="self">self</span>.bbt
+<a href=#113 id=113 data-nosnippet>113</a>            &amp;&amp; <span class="kw">let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(ck)) = bdb.citekey_for_item_key(item_key)
+<a href=#114 id=114 data-nosnippet>114</a>        {
+<a href=#115 id=115 data-nosnippet>115</a>            <span class="kw">return </span><span class="prelude-val">Some</span>(ck);
+<a href=#116 id=116 data-nosnippet>116</a>        }
+<a href=#117 id=117 data-nosnippet>117</a>        <span class="prelude-val">None
+<a href=#118 id=118 data-nosnippet>118</a>    </span>}
+<a href=#119 id=119 data-nosnippet>119</a>}</code></pre></div></section></main></body></html>

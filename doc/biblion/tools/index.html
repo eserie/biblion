@@ -1,0 +1,45 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="MCP tool catalog and dispatch."><title>biblion::tools - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="biblion" data-themes="" data-resource-suffix="" data-rustdoc-version="1.89.0 (29483883e 2025-08-04) (Homebrew)" data-channel="1.89.0" data-search-js="search-92309212.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-4e99c027.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"><style>
+  /* Biblion rustdoc theme overrides */
+  :root {
+    --main-background-color: #F8F7F4;
+    --main-color: #1C1917;
+    --headings-border-bottom-color: #E7E5E4;
+    --color: #1C1917;
+    --link-color: #B45309;
+    --sidebar-background-color: #1E3A8A;
+    --sidebar-link-color: rgba(255,255,255,0.85);
+    --sidebar-current-link-background-color: rgba(255,255,255,0.12);
+  }
+
+  body {
+    font-family: 'Bricolage Grotesque', Georgia, serif !important;
+  }
+
+  .sidebar { background-color: #1E3A8A !important; }
+  .sidebar .location { color: white !important; }
+  .sidebar a { color: rgba(255,255,255,0.8) !important; }
+  .sidebar a:hover { color: white !important; }
+  .sidebar .block .current a { color: white !important; background: rgba(255,255,255,0.1) !important; }
+
+  .main-heading h1 { color: #1E3A8A !important; }
+  a { color: #B45309 !important; }
+  a:hover { color: #92400E !important; }
+
+  pre, code { font-family: 'JetBrains Mono', monospace !important; }
+  .docblock { font-size: 15px; line-height: 1.7; }
+  .docblock code { background: rgba(30,58,138,0.06); padding: 1px 4px; border-radius: 2px; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+</head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../biblion/index.html">biblion</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module tools</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#tool-organization" title="Tool organization">Tool organization</a></li></ul><h3><a href="#modules">Module Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate biblion</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">biblion</a></div><h1>Module <span>tools</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/biblion/tools/mod.rs.html#1-465">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>MCP tool catalog and dispatch.</p>
+<h2 id="tool-organization"><a class="doc-anchor" href="#tool-organization">§</a>Tool organization</h2>
+<p>Tools are split into categories matching the Python server:</p>
+<ul>
+<li><strong>Read tools</strong> (9): pure SQLite, sub-millisecond. The performance win.</li>
+<li><strong>BBT tools</strong> (3): BibTeX/bibliography export, still need BBT JSON-RPC.</li>
+<li><strong>Write tools</strong> (14): Zotero Web API, same latency as Python.</li>
+<li><strong>PDF tools</strong> (3): network-bound, tokio async.</li>
+</ul>
+<p>This module defines the tool catalog (for <code>tools/list</code>) and the dispatch
+function (for <code>tools/call</code>).</p>
+</div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="bibliography/index.html" title="mod biblion::tools::bibliography">bibliography</a></dt><dd>Native bibliography formatting — APA and IEEE styles.</dd><dt><a class="mod" href="bibtex/index.html" title="mod biblion::tools::bibtex">bibtex</a></dt><dd>Native BibTeX/BibLaTeX export — no BBT dependency.</dd><dt><a class="mod" href="format/index.html" title="mod biblion::tools::format">format</a></dt><dd>Item formatting utilities.</dd><dt><a class="mod" href="paper/index.html" title="mod biblion::tools::paper">paper</a></dt><dd>Paper search MCP tools — expose paper-resolver as standalone tools.</dd><dt><a class="mod" href="read/index.html" title="mod biblion::tools::read">read</a></dt><dd>Read-only MCP tools — pure SQLite, sub-millisecond.</dd><dt><a class="mod" href="write/index.html" title="mod biblion::tools::write">write</a></dt><dd>Write MCP tools — Zotero Web API operations.</dd></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.check_writes_enabled.html" title="fn biblion::tools::check_writes_enabled">check_<wbr>writes_<wbr>enabled</a></dt><dd>Check if write tools are enabled. Returns error if not.</dd><dt><a class="fn" href="fn.handle_tool_call.html" title="fn biblion::tools::handle_tool_call">handle_<wbr>tool_<wbr>call</a></dt><dd>Dispatch a tool call to the appropriate handler.</dd><dt><a class="fn" href="fn.optional_str.html" title="fn biblion::tools::optional_str">optional_<wbr>str</a></dt><dd>Extract an optional string parameter.</dd><dt><a class="fn" href="fn.optional_u64.html" title="fn biblion::tools::optional_u64">optional_<wbr>u64</a></dt><dd>Extract an optional u64 parameter with a default value.</dd><dt><a class="fn" href="fn.required_str.html" title="fn biblion::tools::required_str">required_<wbr>str</a></dt><dd>Extract a required string parameter, or return a ToolCallResult error.</dd><dt><a class="fn" href="fn.resolve_citekey.html" title="fn biblion::tools::resolve_citekey">resolve_<wbr>citekey</a></dt><dd>Resolve a citekey to a Zotero item key.</dd><dt><a class="fn" href="fn.tool.html" title="fn biblion::tools::tool">tool</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.tool_catalog.html" title="fn biblion::tools::tool_catalog">tool_<wbr>catalog</a></dt><dd>Build the complete tool catalog for <code>tools/list</code>.</dd></dl></section></div></main></body></html>

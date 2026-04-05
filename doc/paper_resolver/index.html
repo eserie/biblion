@@ -1,0 +1,106 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Concurrent PDF resolver for academic papers — 9 open-access sources."><title>paper_resolver - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="paper_resolver" data-themes="" data-resource-suffix="" data-rustdoc-version="1.89.0 (29483883e 2025-08-04) (Homebrew)" data-channel="1.89.0" data-search-js="search-92309212.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-4e99c027.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"><style>
+  /* Biblion rustdoc theme overrides */
+  :root {
+    --main-background-color: #F8F7F4;
+    --main-color: #1C1917;
+    --headings-border-bottom-color: #E7E5E4;
+    --color: #1C1917;
+    --link-color: #B45309;
+    --sidebar-background-color: #1E3A8A;
+    --sidebar-link-color: rgba(255,255,255,0.85);
+    --sidebar-current-link-background-color: rgba(255,255,255,0.12);
+  }
+
+  body {
+    font-family: 'Bricolage Grotesque', Georgia, serif !important;
+  }
+
+  .sidebar { background-color: #1E3A8A !important; }
+  .sidebar .location { color: white !important; }
+  .sidebar a { color: rgba(255,255,255,0.8) !important; }
+  .sidebar a:hover { color: white !important; }
+  .sidebar .block .current a { color: white !important; background: rgba(255,255,255,0.1) !important; }
+
+  .main-heading h1 { color: #1E3A8A !important; }
+  a { color: #B45309 !important; }
+  a:hover { color: #92400E !important; }
+
+  pre, code { font-family: 'JetBrains Mono', monospace !important; }
+  .docblock { font-size: 15px; line-height: 1.7; }
+  .docblock code { background: rgba(30,58,138,0.06); padding: 1px 4px; border-radius: 2px; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+</head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../paper_resolver/index.html">paper_<wbr>resolver</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#what-it-does" title="What it does">What it does</a></li><li><a href="#sources-by-priority" title="Sources (by priority)">Sources (by priority)</a></li><li><a href="#quick-start" title="Quick start">Quick start</a></li><li><a href="#detailed-reporting" title="Detailed reporting">Detailed reporting</a></li><li><a href="#custom-configuration" title="Custom configuration">Custom configuration</a></li><li><a href="#design-decisions" title="Design decisions">Design decisions</a></li></ul><h3><a href="#structs">Crate Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#constants" title="Constants">Constants</a></li><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>paper_resolver</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/paper_resolver/lib.rs.html#1-2223">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Concurrent PDF resolver for academic papers — 9 open-access sources.</p>
+<h2 id="what-it-does"><a class="doc-anchor" href="#what-it-does">§</a>What it does</h2>
+<p>Given a DOI, URL, or title, queries up to 9 academic sources in parallel
+and returns the best downloadable PDF URL. No Zotero, no reference manager
+dependency — just <code>(doi, url, title) → Option&lt;ResolvedPdf&gt;</code>.</p>
+<h2 id="sources-by-priority"><a class="doc-anchor" href="#sources-by-priority">§</a>Sources (by priority)</h2><div><table><thead><tr><th>#</th><th>Source</th><th>Coverage</th><th>Method</th></tr></thead><tbody>
+<tr><td>1</td><td><strong>arXiv</strong></td><td>arXiv papers</td><td>Instant DOI/URL pattern match (no network)</td></tr>
+<tr><td>2</td><td><strong>OpenAlex</strong></td><td>250M+ works</td><td>Structured OA location data</td></tr>
+<tr><td>3</td><td><strong>CORE</strong></td><td>300M+ OA works</td><td>Institutional repositories</td></tr>
+<tr><td>4</td><td><strong>Google Scholar</strong></td><td>Widest coverage</td><td>HTML scraping (rate-limit risk)</td></tr>
+<tr><td>5</td><td><strong>Unpaywall</strong></td><td>30M+ OA articles</td><td>DOI lookup (requires email)</td></tr>
+<tr><td>6</td><td><strong>Crossref</strong></td><td>Publisher links</td><td>DOI metadata</td></tr>
+<tr><td>7</td><td><strong>Zenodo</strong></td><td>Cross-disciplinary</td><td>CERN preprint repository</td></tr>
+<tr><td>8</td><td><strong>SSRN</strong></td><td>Finance/economics</td><td>Preprint abstracts</td></tr>
+<tr><td>9</td><td><strong>Semantic Scholar</strong></td><td>CS/bio/med</td><td>OA PDFs + disclaimer parsing</td></tr>
+</tbody></table>
+</div><h2 id="quick-start"><a class="doc-anchor" href="#quick-start">§</a>Quick start</h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// Resolve a PDF by DOI (sync — creates its own tokio runtime):
+</span><span class="kw">let </span>result = paper_resolver::resolve_pdf(
+    <span class="prelude-val">Some</span>(<span class="string">"10.48550/arXiv.1706.03762"</span>), <span class="comment">// DOI
+    </span><span class="prelude-val">None</span>,                              <span class="comment">// URL
+    </span><span class="prelude-val">Some</span>(<span class="string">"Attention Is All You Need"</span>), <span class="comment">// title (fallback)
+</span>);
+
+<span class="kw">if let </span><span class="prelude-val">Some</span>(pdf) = result {
+    <span class="macro">println!</span>(<span class="string">"Found: {} (via {})"</span>, pdf.url, pdf.source);
+    <span class="macro">println!</span>(<span class="string">"Downloadable: {}"</span>, pdf.downloadable);
+}</code></pre></div>
+<h2 id="detailed-reporting"><a class="doc-anchor" href="#detailed-reporting">§</a>Detailed reporting</h2>
+<p>Use <a href="fn.resolve_pdf_with_report.html" title="fn paper_resolver::resolve_pdf_with_report"><code>resolve_pdf_with_report</code></a> to see why each source succeeded or failed:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>report = paper_resolver::resolve_pdf_with_report(
+    <span class="prelude-val">Some</span>(<span class="string">"10.1109/TSE.2010.62"</span>), <span class="prelude-val">None</span>,
+    <span class="prelude-val">Some</span>(<span class="string">"mutation testing"</span>),
+    <span class="kw-2">&amp;</span>paper_resolver::ResolverConfig::default(),
+);
+<span class="macro">println!</span>(<span class="string">"{}"</span>, report.summary());
+<span class="comment">// PDF found via google_scholar (downloadable: true)
+//   https://mutationtesting.uni.lu/TR-09-06.pdf
+//
+// Sources queried:
+//   openalex: no OA location found
+//   google_scholar: found https://...
+//   unpaywall: skipped — configure resolver.email
+//   ...</span></code></pre></div>
+<h2 id="custom-configuration"><a class="doc-anchor" href="#custom-configuration">§</a>Custom configuration</h2>
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">use </span>paper_resolver::{ResolverConfig, SourceEntry};
+
+<span class="kw">let </span><span class="kw-2">mut </span>config = ResolverConfig::default();
+config.email = <span class="string">"researcher@university.edu"</span>.into();
+config.timeout_secs = <span class="number">10</span>;
+config.sources = <span class="macro">vec!</span>[
+    SourceEntry::new(<span class="string">"arxiv"</span>, <span class="bool-val">true</span>),
+    SourceEntry::new(<span class="string">"openalex"</span>, <span class="bool-val">true</span>),
+    SourceEntry::new(<span class="string">"unpaywall"</span>, <span class="bool-val">true</span>),
+    <span class="comment">// disable the rest
+</span>];
+
+<span class="kw">let </span>result = paper_resolver::resolve_pdf_with_config(
+    <span class="prelude-val">Some</span>(<span class="string">"10.1234/example"</span>), <span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="kw-2">&amp;</span>config,
+);</code></pre></div>
+<h2 id="design-decisions"><a class="doc-anchor" href="#design-decisions">§</a>Design decisions</h2>
+<ul>
+<li><strong>Concurrent by default</strong>: all enabled sources are queried simultaneously
+via <code>futures::future::join_all</code>. First-to-return wins by priority.</li>
+<li><strong>Blocked domains</strong>: publisher paywalls (IEEE, Springer, Elsevier, etc.)
+are detected and marked <code>downloadable: false</code> rather than silently failing.</li>
+<li><strong>No file I/O</strong>: this crate has zero filesystem dependency. Configuration
+is passed as a struct — the caller owns config file parsing.</li>
+<li><strong>Standalone</strong>: no Zotero dependency. Usable in any Rust project that
+needs academic PDF resolution.</li>
+</ul>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.Endpoints.html" title="struct paper_resolver::Endpoints">Endpoints</a></dt><dd>Base URLs for each source — overridable for testing.</dd><dt><a class="struct" href="struct.ResolveReport.html" title="struct paper_resolver::ResolveReport">Resolve<wbr>Report</a></dt><dd>Detailed resolution result — includes per-source failure reasons.</dd><dt><a class="struct" href="struct.ResolvedPdf.html" title="struct paper_resolver::ResolvedPdf">Resolved<wbr>Pdf</a></dt><dd>Result of PDF URL resolution.</dd><dt><a class="struct" href="struct.ResolverConfig.html" title="struct paper_resolver::ResolverConfig">Resolver<wbr>Config</a></dt><dd>Configuration for the paper resolver.</dd><dt><a class="struct" href="struct.SourceEntry.html" title="struct paper_resolver::SourceEntry">Source<wbr>Entry</a></dt><dd>A source entry — name + enabled flag.</dd></dl><h2 id="constants" class="section-header">Constants<a href="#constants" class="anchor">§</a></h2><dl class="item-table"><dt><a class="constant" href="constant.SOURCE_NAMES.html" title="constant paper_resolver::SOURCE_NAMES">SOURCE_<wbr>NAMES</a></dt><dd>All available source names.</dd></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.resolve_pdf.html" title="fn paper_resolver::resolve_pdf">resolve_<wbr>pdf</a></dt><dd>Resolve a PDF URL using all available sources (default config).</dd><dt><a class="fn" href="fn.resolve_pdf_async.html" title="fn paper_resolver::resolve_pdf_async">resolve_<wbr>pdf_<wbr>async</a></dt><dd>Async version with configuration — caller owns the tokio runtime.</dd><dt><a class="fn" href="fn.resolve_pdf_async_with_report.html" title="fn paper_resolver::resolve_pdf_async_with_report">resolve_<wbr>pdf_<wbr>async_<wbr>with_<wbr>report</a></dt><dd>Async version with detailed per-source reporting.</dd><dt><a class="fn" href="fn.resolve_pdf_with_config.html" title="fn paper_resolver::resolve_pdf_with_config">resolve_<wbr>pdf_<wbr>with_<wbr>config</a></dt><dd>Resolve a PDF URL with custom configuration.</dd><dt><a class="fn" href="fn.resolve_pdf_with_report.html" title="fn paper_resolver::resolve_pdf_with_report">resolve_<wbr>pdf_<wbr>with_<wbr>report</a></dt><dd>Resolve with detailed per-source reporting.</dd></dl></section></div></main></body></html>

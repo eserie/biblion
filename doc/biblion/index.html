@@ -1,0 +1,46 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Zotero MCP Server — high-performance Rust implementation."><title>biblion - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="biblion" data-themes="" data-resource-suffix="" data-rustdoc-version="1.89.0 (29483883e 2025-08-04) (Homebrew)" data-channel="1.89.0" data-search-js="search-92309212.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-4e99c027.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"><style>
+  /* Biblion rustdoc theme overrides */
+  :root {
+    --main-background-color: #F8F7F4;
+    --main-color: #1C1917;
+    --headings-border-bottom-color: #E7E5E4;
+    --color: #1C1917;
+    --link-color: #B45309;
+    --sidebar-background-color: #1E3A8A;
+    --sidebar-link-color: rgba(255,255,255,0.85);
+    --sidebar-current-link-background-color: rgba(255,255,255,0.12);
+  }
+
+  body {
+    font-family: 'Bricolage Grotesque', Georgia, serif !important;
+  }
+
+  .sidebar { background-color: #1E3A8A !important; }
+  .sidebar .location { color: white !important; }
+  .sidebar a { color: rgba(255,255,255,0.8) !important; }
+  .sidebar a:hover { color: white !important; }
+  .sidebar .block .current a { color: white !important; background: rgba(255,255,255,0.1) !important; }
+
+  .main-heading h1 { color: #1E3A8A !important; }
+  a { color: #B45309 !important; }
+  a:hover { color: #92400E !important; }
+
+  pre, code { font-family: 'JetBrains Mono', monospace !important; }
+  .docblock { font-size: 15px; line-height: 1.7; }
+  .docblock code { background: rgba(30,58,138,0.06); padding: 1px 4px; border-radius: 2px; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+</head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../biblion/index.html">biblion</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#transports" title="Transports">Transports</a></li><li><a href="#subcommands" title="Subcommands">Subcommands</a></li></ul><h3><a href="#modules">Crate Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>biblion</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/biblion/main.rs.html#3-123">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Zotero MCP Server — high-performance Rust implementation.</p>
+<h2 id="transports"><a class="doc-anchor" href="#transports">§</a>Transports</h2>
+<ul>
+<li><strong>stdio</strong> (default) — pipe-based, launched by Claude Code CLI.</li>
+<li><strong>SSE</strong> — HTTP daemon for Claude Desktop. Set <code>ZOTERO_MCP_TRANSPORT=sse</code>.</li>
+</ul>
+<h2 id="subcommands"><a class="doc-anchor" href="#subcommands">§</a>Subcommands</h2>
+<ul>
+<li><code>biblion</code> — run MCP server (default)</li>
+<li><code>biblion check</code> — print diagnostics and exit</li>
+</ul>
+</div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="api/index.html" title="mod biblion::api">api</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>External API clients — network calls for operations that can’t be done
+via local SQLite alone.</dd><dt><a class="mod" href="config/index.html" title="mod biblion::config">config</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Configuration for the Zotero MCP server.</dd><dt><a class="mod" href="db/index.html" title="mod biblion::db">db</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Database access layer — direct SQLite reads on Zotero’s databases.</dd><dt><a class="mod" href="protocol/index.html" title="mod biblion::protocol">protocol</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>MCP (Model Context Protocol) JSON-RPC types.</dd><dt><a class="mod" href="server/index.html" title="mod biblion::server">server</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>MCP server — stdio JSON-RPC event loop.</dd><dt><a class="mod" href="sse/index.html" title="mod biblion::sse">sse</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>SSE (Server-Sent Events) transport for the MCP server.</dd><dt><a class="mod" href="tools/index.html" title="mod biblion::tools">tools</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>MCP tool catalog and dispatch.</dd></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.main.html" title="fn biblion::main">main</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.run_check.html" title="fn biblion::run_check">run_<wbr>check</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>Diagnostic subcommand: print library info and exit.</dd></dl><script type="text/json" id="notable-traits-data">{"<Arc<S> as Service<Request>>::Future":"<h3>Notable traits for <code><a class=\"struct\" href=\"https://doc.rust-lang.org/1.89.0/alloc/sync/struct.Arc.html\" title=\"struct alloc::sync::Arc\">Arc</a>&lt;<a class=\"struct\" href=\"https://doc.rust-lang.org/1.89.0/std/fs/struct.File.html\" title=\"struct std::fs::File\">File</a>&gt;</code></h3><pre><code><div class=\"where\">impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.89.0/std/io/trait.Read.html\" title=\"trait std::io::Read\">Read</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.89.0/alloc/sync/struct.Arc.html\" title=\"struct alloc::sync::Arc\">Arc</a>&lt;<a class=\"struct\" href=\"https://doc.rust-lang.org/1.89.0/std/fs/struct.File.html\" title=\"struct std::fs::File\">File</a>&gt;</div><div class=\"where\">impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.89.0/std/io/trait.Write.html\" title=\"trait std::io::Write\">Write</a> for <a class=\"struct\" href=\"https://doc.rust-lang.org/1.89.0/alloc/sync/struct.Arc.html\" title=\"struct alloc::sync::Arc\">Arc</a>&lt;<a class=\"struct\" href=\"https://doc.rust-lang.org/1.89.0/std/fs/struct.File.html\" title=\"struct std::fs::File\">File</a>&gt;</div>"}</script></section></div></main></body></html>

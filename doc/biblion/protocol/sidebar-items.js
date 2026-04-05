@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["InitializeResult","JsonRpcError","JsonRpcRequest","JsonRpcResponse","ServerCapabilities","ServerInfo","ToolCallParams","ToolCallResult","ToolContent","ToolDefinition","ToolsCapability","ToolsListResult"]};

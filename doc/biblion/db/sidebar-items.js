@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["bbt","zotero"],"struct":["DbPool"]};

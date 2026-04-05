@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["biblatex_type","bibtex_type","escape_bibtex","format_authors","format_editors","item_to_bibtex","items_to_bibtex"]};

@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Biblion — Your Library, Legible to Every Intelligence</title>
+  <meta name="description" content="Ask your AI about any paper in your Zotero library. Sub-millisecond reads, no vector DB. 25 MCP tools, Rust, ~6 MB.">
+  <meta name="theme-color" content="#1E3A8A">
+  <meta property="og:title" content="Biblion — Your Library, Legible to Every Intelligence">
+  <meta property="og:description" content="Ask your AI about any paper in your Zotero library. Sub-millisecond reads, no vector DB. Rust MCP server with 25 tools.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' font-family='serif'>%CE%B2</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #1E3A8A;
+      --gold: #B45309;
+      --vermillion: #2563EB;
+      --vellum: #F0F4FA;
+      --white: #FAFCFF;
+      --text: #1C1917;
+      --text-secondary: #475569;
+      --text-dim: #94A3B8;
+      --border: #CBD5E1;
+      --terminal-bg: #0F172A;
+      --terminal-surface: #1E293B;
+      --terminal-text: #E2E8F0;
+      --terminal-accent: #93C5FD;
+      --terminal-dim: #64748B;
+      --font-body: 'Bricolage Grotesque', Georgia, serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html { scroll-behavior: smooth; overflow-x: hidden; }
+
+    body {
+      font-family: var(--font-body);
+      color: var(--text);
+      line-height: 1.65;
+      background: var(--vellum);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--vermillion); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .container { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+
+    /* ---------- HERO ---------- */
+    .hero {
+      background: var(--ink);
+      color: var(--vellum);
+      padding: 100px 0 80px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-weight: 800;
+      font-size: clamp(32px, 5.5vw, 52px);
+      line-height: 1.15;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+      color: var(--vellum);
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeUp 0.6s var(--ease-out-expo) 0.15s forwards;
+    }
+
+    .hero .tagline {
+      font-size: 15px;
+      font-weight: 400;
+      font-style: italic;
+      color: rgba(245,240,232,0.5);
+      margin-bottom: 32px;
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeUp 0.6s var(--ease-out-expo) 0.3s forwards;
+    }
+
+    .hero .subtitle {
+      font-size: clamp(15px, 2.2vw, 17px);
+      font-weight: 400;
+      color: rgba(245,240,232,0.7);
+      max-width: 500px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeUp 0.6s var(--ease-out-expo) 0.45s forwards;
+    }
+
+    .hero-install {
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeUp 0.6s var(--ease-out-expo) 0.6s forwards;
+    }
+
+    .hero-install code {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid rgba(245,240,232,0.15);
+      padding: 12px 24px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--vellum);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .hero-install code:hover {
+      background: rgba(0,0,0,0.35);
+      border-color: rgba(245,240,232,0.25);
+    }
+
+    .hero-install code .prompt { color: var(--terminal-accent); }
+
+    .hero-badges {
+      margin-top: 24px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.6s var(--ease-out-expo) 0.75s forwards;
+    }
+
+    .hero-badges img { height: 20px; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---------- PAIN POINT ---------- */
+    .pain {
+      padding: 60px 0;
+      background: var(--white);
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pain p {
+      font-size: 17px;
+      color: var(--text-secondary);
+      max-width: 560px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    .pain strong {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    /* ---------- SHOWCASE TERMINAL ---------- */
+    .showcase {
+      padding: 80px 0 100px;
+      background: var(--terminal-bg);
+    }
+
+    .showcase .section-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .showcase .section-header h2 {
+      font-weight: 800;
+      font-size: clamp(24px, 3.5vw, 32px);
+      color: var(--terminal-text);
+      margin-bottom: 10px;
+    }
+
+    .showcase .section-header p {
+      font-size: 15px;
+      color: var(--terminal-dim);
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    .showcase-terminal {
+      background: var(--terminal-surface);
+      overflow: hidden;
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
+      border: 1px solid rgba(245,240,232,0.08);
+    }
+
+    .term-chrome {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 18px;
+      background: rgba(245,240,232,0.03);
+      border-bottom: 1px solid rgba(245,240,232,0.06);
+    }
+
+    .term-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .term-dot.r { background: #FF5F57; }
+    .term-dot.y { background: #FFBD2E; }
+    .term-dot.g { background: #28C840; }
+
+    .term-title {
+      flex: 1;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--terminal-dim);
+      margin-right: 38px;
+    }
+
+    .term-body {
+      padding: 24px 22px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--terminal-text);
+      min-height: 200px;
+      overflow: hidden;
+    }
+
+    .term-line { display: flex; gap: 0; white-space: pre-wrap; word-break: break-word; }
+    .term-prompt { color: var(--terminal-accent); margin-right: 10px; flex-shrink: 0; }
+
+    .term-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 16px;
+      background: var(--terminal-accent);
+      animation: blink 1s step-end infinite;
+      vertical-align: middle;
+      margin-left: 2px;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .term-output {
+      margin-top: 12px;
+      color: var(--terminal-dim);
+      transition: opacity 0.4s ease;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.7;
+    }
+
+    .term-dots {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 20px;
+    }
+
+    .term-dot-indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(245,240,232,0.12);
+      transition: background 0.3s;
+    }
+
+    .term-dot-indicator.active {
+      background: var(--terminal-accent);
+    }
+
+    /* ---------- HOW IT WORKS ---------- */
+    .howitworks {
+      padding: 100px 0;
+      background: var(--vellum);
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+
+    .section-header h2 {
+      font-weight: 800;
+      font-size: clamp(24px, 3.5vw, 32px);
+      color: var(--text);
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+
+    .section-header p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* Comparison: RAG vs Biblion */
+    .compare {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .compare-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .compare-row:last-child { border-bottom: none; }
+
+    .compare-label {
+      width: 100px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+
+    .compare-typical {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text-dim);
+      text-decoration: line-through;
+      padding: 8px 12px;
+      background: rgba(160,148,132,0.08);
+    }
+
+    .compare-biblion {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 600;
+      padding: 8px 12px;
+      background: rgba(30,58,138,0.06);
+    }
+
+    .compare-header {
+      display: flex;
+      gap: 16px;
+      padding: 0 0 12px;
+      margin-bottom: 4px;
+    }
+
+    .compare-header span {
+      flex: 1;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .compare-header span:first-child { width: 100px; flex: none; }
+    .compare-header .typical-h { color: var(--text-dim); }
+    .compare-header .biblion-h { color: var(--ink); }
+
+    /* ---------- FEATURES ---------- */
+    .features {
+      padding: 80px 0;
+      background: var(--white);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .feature-card {
+      background: var(--white);
+      padding: 28px 24px;
+    }
+
+    .feature-card h4 {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .feature-card p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* ---------- STATS ---------- */
+    .stats {
+      padding: 80px 0;
+      background: var(--vellum);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 24px 16px;
+    }
+
+    .stat-number {
+      font-weight: 800;
+      font-size: 30px;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-weight: 400;
+    }
+
+    /* ---------- INSTALL ---------- */
+    .install-section {
+      padding: 100px 0;
+      text-align: center;
+      background: var(--white);
+    }
+
+    .install-section h2 {
+      font-weight: 800;
+      font-size: clamp(24px, 3.5vw, 32px);
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .install-section p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+    }
+
+    .install-cmd {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--terminal-bg);
+      padding: 14px 24px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--terminal-text);
+    }
+
+    .install-cmd .prompt { color: var(--terminal-accent); }
+
+    .cta-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--vermillion);
+      font-weight: 600;
+      font-size: 14px;
+      margin-top: 28px;
+      transition: gap 0.2s;
+    }
+
+    .cta-link:hover { gap: 12px; text-decoration: none; }
+
+    /* ---------- FOOTER ---------- */
+    .footer {
+      padding: 40px 0;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer a { color: var(--text-secondary); }
+
+    /* ---------- RESPONSIVE ---------- */
+    @media (max-width: 768px) {
+      .hero { padding: 70px 0 60px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .features-grid { grid-template-columns: 1fr; }
+      .compare-row { flex-direction: column; gap: 4px; }
+      .compare-label { width: auto; }
+      .term-body { font-size: 11px; padding: 18px 14px; min-height: 180px; }
+    }
+
+    @media (max-width: 480px) {
+      .hero-install code { font-size: 12px; padding: 10px 16px; }
+    }
+
+    /* ---------- REVEAL ---------- */
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s var(--ease-out-expo), transform 0.6s var(--ease-out-expo);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========== HERO ========== -->
+  <section class="hero">
+    <div class="container">
+      <h1>Ask your AI about any paper<br>in your Zotero library.</h1>
+      <p class="tagline">Your library, legible to every intelligence.</p>
+      <p class="subtitle">No more hallucinated citations. Biblion reads your Zotero database directly — sub-millisecond reads, no vector DB, no embeddings.</p>
+      <div class="hero-install">
+        <code onclick="copyCmd(this)" data-copy="cargo install biblion">
+          <span class="prompt">$</span> cargo install biblion
+        </code>
+      </div>
+      <div class="hero-badges">
+        <a href="https://crates.io/crates/biblion"><img src="https://img.shields.io/crates/v/biblion" alt="crates.io"></a>
+        <a href="https://github.com/eserie/biblion"><img src="https://img.shields.io/github/stars/eserie/biblion?style=flat" alt="GitHub stars"></a>
+        <a href="https://github.com/eserie/biblion/actions"><img src="https://github.com/eserie/biblion/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PAIN POINT ========== -->
+  <section class="pain">
+    <div class="container">
+      <p>You asked Claude for a citation and it <strong>hallucinated the reference</strong>. Biblion means your AI reads your actual library. Every citation is real. Every DOI resolves.</p>
+    </div>
+  </section>
+
+  <!-- ========== TERMINAL SHOWCASE ========== -->
+  <section class="showcase">
+    <div class="container">
+      <div class="section-header">
+        <h2>Watch it work.</h2>
+        <p>Search, cite, and export — from your AI assistant.</p>
+      </div>
+      <div class="showcase-terminal" id="showcase-term">
+        <div class="term-chrome">
+          <span class="term-dot r"></span>
+          <span class="term-dot y"></span>
+          <span class="term-dot g"></span>
+          <span class="term-title">biblion</span>
+        </div>
+        <div class="term-body">
+          <div class="term-line">
+            <span class="term-prompt">claude&gt;</span>
+            <span id="term-cmd"></span><span class="term-cursor" id="term-cursor"></span>
+          </div>
+          <div class="term-output" id="term-out"></div>
+        </div>
+      </div>
+      <div class="term-dots" id="term-dots"></div>
+    </div>
+  </section>
+
+  <!-- ========== HOW IT WORKS ========== -->
+  <section class="howitworks">
+    <div class="container">
+      <div class="section-header">
+        <h2>No vector DB. The LLM is the semantic layer.</h2>
+        <p>Every AI tool builds an embedding pipeline. Biblion just reads the database you already have.</p>
+      </div>
+      <div class="compare">
+        <div class="compare-header">
+          <span>&nbsp;</span>
+          <span class="typical-h">Typical RAG</span>
+          <span class="biblion-h">Biblion</span>
+        </div>
+        <div class="compare-row">
+          <div class="compare-label">Retrieval</div>
+          <div class="compare-typical">Embeddings + vector DB</div>
+          <div class="compare-biblion">SQL query on local SQLite</div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-label">Latency</div>
+          <div class="compare-typical">100ms+ per query</div>
+          <div class="compare-biblion">&lt; 1ms reads</div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-label">Setup</div>
+          <div class="compare-typical">Indexing pipeline, ingestion</div>
+          <div class="compare-biblion">cargo install, done</div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-label">Network</div>
+          <div class="compare-typical">Always required</div>
+          <div class="compare-biblion">Reads are fully local</div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-label">Semantics</div>
+          <div class="compare-typical">Pre-computed embeddings</div>
+          <div class="compare-biblion">The LLM itself</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FEATURES ========== -->
+  <section class="features">
+    <div class="container">
+      <div class="section-header">
+        <h2>25 tools. One binary.</h2>
+        <p>Everything you need to make your library addressable.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <h4>Search</h4>
+          <p>Full-text search across titles, DOIs, abstracts, authors.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Cite</h4>
+          <p>BibTeX, BibLaTeX, APA, IEEE — native generation, no plugins.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Export</h4>
+          <p>Export entire collections as BibTeX. Formatted bibliographies.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Resolve PDFs</h4>
+          <p>9 academic sources queried concurrently over the network.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Write</h4>
+          <p>Create items, attach PDFs, merge duplicates. Via Zotero API, disabled by default.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Browse</h4>
+          <p>Collections, recent items, attachments, notes — all indexed.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== STATS ========== -->
+  <section class="stats">
+    <div class="container">
+      <div class="section-header">
+        <h2>By the numbers.</h2>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-item reveal">
+          <div class="stat-number">25</div>
+          <div class="stat-label">MCP Tools</div>
+        </div>
+        <div class="stat-item reveal">
+          <div class="stat-number">&lt;1ms</div>
+          <div class="stat-label">Read Latency</div>
+        </div>
+        <div class="stat-item reveal">
+          <div class="stat-number">9</div>
+          <div class="stat-label">PDF Sources</div>
+        </div>
+        <div class="stat-item reveal">
+          <div class="stat-number">~6MB</div>
+          <div class="stat-label">Binary Size</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== INSTALL ========== -->
+  <section class="install-section">
+    <div class="container">
+      <h2>Get started in 30 seconds.</h2>
+      <p>Install, add to Claude Code, done. Zero config for reads. Write tools need a Zotero API key.</p>
+      <div class="install-cmd">
+        <span class="prompt">$</span> cargo install biblion
+      </div>
+      <div style="display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; margin-top: 28px;">
+        <a href="https://github.com/eserie/biblion" class="cta-link">View on GitHub &rarr;</a>
+        <a href="doc/biblion/index.html" class="cta-link" style="color: var(--ink);">API Docs &rarr;</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container">
+      <p>Biblion &middot; MIT License &middot; <a href="https://github.com/eserie/biblion">GitHub</a> &middot; <a href="doc/biblion/index.html">API Docs</a></p>
+      <p style="margin-top: 8px; font-size: 11px; color: var(--text-dim);">
+        <em>biblion (&#946;&#953;&#946;&#955;&#943;&#959;&#957;) — Greek for "book, scroll." The root of "bibliography."</em>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    /* ---------- COPY TO CLIPBOARD ---------- */
+    function copyCmd(el) {
+      const text = el.dataset.copy;
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = el.innerHTML;
+        el.textContent = '\u2713 Copied!';
+        setTimeout(() => { el.innerHTML = orig; }, 2000);
+      });
+    }
+
+    /* ---------- REVEAL ON SCROLL ---------- */
+    const revealObs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+    /* ---------- TERMINAL TYPING ---------- */
+    const demos = [
+      {
+        cmd: 'find me that mutation testing survey paper',
+        out: 'Found: jiaAnalysisSurveyDevelopment2011\n  An Analysis and Survey of the Development\n  of Mutation Testing\n  Jia, Y.; Harman, M. (2011)\n  DOI: 10.1109/TSE.2010.62'
+      },
+      {
+        cmd: 'export the BibTeX',
+        out: '@article{jiaAnalysisSurveyDevelopment2011,\n  author = {Jia, Yue and Harman, Mark},\n  title = {{An Analysis and Survey of the\n    Development of Mutation Testing}},\n  journal = {IEEE Trans. Softw. Eng.},\n  year = {2011},\n  doi = {10.1109/TSE.2010.62},\n}'
+      },
+      {
+        cmd: 'format it as APA',
+        out: 'Jia, Y. & Harman, M. (2011). An Analysis and\n  Survey of the Development of Mutation Testing.\n  IEEE Transactions on Software Engineering,\n  37(5), 649-678.'
+      }
+    ];
+
+    const cmdEl = document.getElementById('term-cmd');
+    const outEl = document.getElementById('term-out');
+    const cursorEl = document.getElementById('term-cursor');
+    const dotsEl = document.getElementById('term-dots');
+    let demoIdx = 0;
+
+    // Create dot indicators
+    demos.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'term-dot-indicator' + (i === 0 ? ' active' : '');
+      dotsEl.appendChild(dot);
+    });
+
+    function updateDots(idx) {
+      dotsEl.querySelectorAll('.term-dot-indicator').forEach((d, i) => {
+        d.classList.toggle('active', i === idx);
+      });
+    }
+
+    function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    async function typeText(text, el, speed) {
+      for (const ch of text) {
+        el.textContent += ch;
+        await wait(speed + Math.random() * 25);
+      }
+    }
+
+    async function runDemos() {
+      while (true) {
+        const demo = demos[demoIdx];
+        cmdEl.textContent = '';
+        outEl.textContent = '';
+        outEl.style.opacity = '0';
+        cursorEl.style.display = 'inline-block';
+        updateDots(demoIdx);
+
+        await typeText(demo.cmd, cmdEl, 30);
+        await wait(400);
+
+        cursorEl.style.display = 'none';
+        outEl.textContent = demo.out;
+        outEl.style.opacity = '1';
+
+        await wait(4000);
+
+        demoIdx = (demoIdx + 1) % demos.length;
+      }
+    }
+
+    /* Start typing when showcase is visible */
+    const showcaseObs = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        showcaseObs.disconnect();
+        runDemos();
+      }
+    }, { threshold: 0.3 });
+    showcaseObs.observe(document.getElementById('showcase-term'));
+  </script>
+</body>
+</html>

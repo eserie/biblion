@@ -1,0 +1,2 @@
+createSrcSidebar('[["biblion",["",[["api",[],["bbt_rpc.rs","mod.rs","zotero_web.rs"]],["db",[],["bbt.rs","mod.rs","zotero.rs"]],["tools",[],["bibliography.rs","bibtex.rs","format.rs","mod.rs","paper.rs","read.rs","write.rs"]]],["config.rs","main.rs","protocol.rs","server.rs","sse.rs"]]],["paper_resolver",["",[],["lib.rs"]]]]');
+//{"start":19,"fragment_lengths":[268,38]}
