@@ -74,9 +74,9 @@ impl BbtDb {
     /// Returns a HashMap with ~1000 entries (~43KB). Used for batch operations
     /// and for populating the in-memory cache at startup.
     pub fn all_citekeys(&self) -> Result<HashMap<String, String>> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT citationKey, itemKey FROM citationkey WHERE citationKey IS NOT NULL")?;
+        let mut stmt = self.conn.prepare(
+            "SELECT citationKey, itemKey FROM citationkey WHERE citationKey IS NOT NULL",
+        )?;
         let rows = stmt.query_map([], |row| {
             Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
         })?;
@@ -98,10 +98,7 @@ impl BbtDb {
 /// BBT stores citekeys as item metadata fields in Zotero's EAV schema.
 /// This is the most reliable source — it covers 99.9% of items, even
 /// those not yet indexed in `better-bibtex.migrated`.
-pub fn citekey_from_zotero_sqlite(
-    conn: &Connection,
-    item_key: &str,
-) -> Result<Option<String>> {
+pub fn citekey_from_zotero_sqlite(conn: &Connection, item_key: &str) -> Result<Option<String>> {
     let mut stmt = conn.prepare_cached(
         "SELECT iv.value FROM items i
          JOIN itemData id ON i.itemID = id.itemID
@@ -116,10 +113,7 @@ pub fn citekey_from_zotero_sqlite(
 }
 
 /// Reverse lookup: find item key by citekey in `zotero.sqlite`.
-pub fn item_key_from_zotero_sqlite(
-    conn: &Connection,
-    citekey: &str,
-) -> Result<Option<String>> {
+pub fn item_key_from_zotero_sqlite(conn: &Connection, citekey: &str) -> Result<Option<String>> {
     let mut stmt = conn.prepare_cached(
         "SELECT i.key FROM items i
          JOIN itemData id ON i.itemID = id.itemID
@@ -136,9 +130,7 @@ pub fn item_key_from_zotero_sqlite(
 }
 
 /// Load all citekeys from `zotero.sqlite` (most complete source).
-pub fn all_citekeys_from_zotero_sqlite(
-    conn: &Connection,
-) -> Result<HashMap<String, String>> {
+pub fn all_citekeys_from_zotero_sqlite(conn: &Connection) -> Result<HashMap<String, String>> {
     let mut stmt = conn.prepare(
         "SELECT iv.value, i.key FROM items i
          JOIN itemData id ON i.itemID = id.itemID

@@ -79,33 +79,27 @@ impl Config {
         // Load .env file if present (ignore errors — it's optional)
         let _ = dotenvy::dotenv();
 
-        let home = std::env::var("HOME")
-            .expect("HOME environment variable must be set");
+        let home = std::env::var("HOME").expect("HOME environment variable must be set");
 
         Self {
             zotero_sqlite_path: env_path(
                 "ZOTERO_SQLITE_PATH",
                 &format!("{home}/Zotero/zotero.sqlite"),
             ),
-            zotero_storage_path: env_path(
-                "ZOTERO_STORAGE_PATH",
-                &format!("{home}/Zotero/storage"),
-            ),
+            zotero_storage_path: env_path("ZOTERO_STORAGE_PATH", &format!("{home}/Zotero/storage")),
             bbt_migrated_path: env_path(
                 "BBT_MIGRATED_PATH",
                 &format!("{home}/Zotero/better-bibtex.migrated"),
             ),
-            zotero_api_key: std::env::var("ZOTERO_API_KEY").ok().filter(|s| !s.is_empty()),
-            zotero_library_id: std::env::var("ZOTERO_LIBRARY_ID")
-                .unwrap_or_default(), // Must be set for write operations
+            zotero_api_key: std::env::var("ZOTERO_API_KEY")
+                .ok()
+                .filter(|s| !s.is_empty()),
+            zotero_library_id: std::env::var("ZOTERO_LIBRARY_ID").unwrap_or_default(), // Must be set for write operations
             zotero_library_type: std::env::var("ZOTERO_LIBRARY_TYPE")
                 .unwrap_or_else(|_| "user".into()),
             bbt_url: std::env::var("BBT_URL")
                 .unwrap_or_else(|_| "http://localhost:23119/better-bibtex/json-rpc".into()),
-            log_level: match std::env::var("ZOTERO_MCP_LOG")
-                .unwrap_or_default()
-                .as_str()
-            {
+            log_level: match std::env::var("ZOTERO_MCP_LOG").unwrap_or_default().as_str() {
                 "debug" => LogLevel::Debug,
                 "quiet" | "silent" => LogLevel::Quiet,
                 _ => LogLevel::Info,
@@ -147,7 +141,13 @@ mod tests {
             writes_enabled: false,
         };
         assert!(!config.has_write_access());
-        assert!(config.zotero_sqlite_path.to_str().unwrap().ends_with("zotero.sqlite"));
+        assert!(
+            config
+                .zotero_sqlite_path
+                .to_str()
+                .unwrap()
+                .ends_with("zotero.sqlite")
+        );
     }
 
     #[test]
@@ -160,7 +160,8 @@ mod tests {
             zotero_library_id: "1".into(),
             zotero_library_type: "user".into(),
             bbt_url: "http://localhost:23119/better-bibtex/json-rpc".into(),
-            log_level: LogLevel::Quiet, writes_enabled: false,
+            log_level: LogLevel::Quiet,
+            writes_enabled: false,
         };
         assert!(config.has_write_access());
     }

@@ -34,13 +34,11 @@ fn main() -> Result<()> {
     let config = config::Config::from_env();
     let db = db::DbPool::open(&config.zotero_sqlite_path, &config.bbt_migrated_path);
 
-    let transport = std::env::var("ZOTERO_MCP_TRANSPORT")
-        .unwrap_or_else(|_| "stdio".into());
+    let transport = std::env::var("ZOTERO_MCP_TRANSPORT").unwrap_or_else(|_| "stdio".into());
 
     match transport.as_str() {
         "sse" => {
-            let host = std::env::var("ZOTERO_MCP_HOST")
-                .unwrap_or_else(|_| "127.0.0.1".into());
+            let host = std::env::var("ZOTERO_MCP_HOST").unwrap_or_else(|_| "127.0.0.1".into());
             let port: u16 = std::env::var("ZOTERO_MCP_PORT")
                 .unwrap_or_else(|_| "23120".into())
                 .parse()

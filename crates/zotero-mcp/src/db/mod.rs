@@ -67,16 +67,16 @@ impl DbPool {
 
     /// Get the Zotero database, returning a clear error if unavailable.
     pub fn zotero(&self) -> Result<&zotero::ZoteroDb> {
-        self.zotero
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("Zotero database not available. Check ZOTERO_SQLITE_PATH."))
+        self.zotero.as_ref().ok_or_else(|| {
+            anyhow::anyhow!("Zotero database not available. Check ZOTERO_SQLITE_PATH.")
+        })
     }
 
     /// Get the BBT database, returning a clear error if unavailable.
     pub fn bbt(&self) -> Result<&bbt::BbtDb> {
-        self.bbt
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("Better BibTeX database not available. Check BBT_MIGRATED_PATH."))
+        self.bbt.as_ref().ok_or_else(|| {
+            anyhow::anyhow!("Better BibTeX database not available. Check BBT_MIGRATED_PATH.")
+        })
     }
 
     /// Resolve a citekey to an item key, trying all available sources.
@@ -87,14 +87,16 @@ impl DbPool {
     pub fn item_key_for_citekey(&self, citekey: &str) -> Result<Option<String>> {
         // Try zotero.sqlite first (most reliable)
         if let Some(zdb) = &self.zotero
-            && let Ok(Some(key)) = bbt::item_key_from_zotero_sqlite(zdb.conn(), citekey) {
-                return Ok(Some(key));
-            }
+            && let Ok(Some(key)) = bbt::item_key_from_zotero_sqlite(zdb.conn(), citekey)
+        {
+            return Ok(Some(key));
+        }
         // Fallback to BBT migrated
         if let Some(bdb) = &self.bbt
-            && let Ok(Some(key)) = bdb.item_key_for_citekey(citekey) {
-                return Ok(Some(key));
-            }
+            && let Ok(Some(key)) = bdb.item_key_for_citekey(citekey)
+        {
+            return Ok(Some(key));
+        }
         Ok(None)
     }
 
@@ -102,14 +104,16 @@ impl DbPool {
     pub fn citekey_for_item_key(&self, item_key: &str) -> Option<String> {
         // Try zotero.sqlite first
         if let Some(zdb) = &self.zotero
-            && let Ok(Some(ck)) = bbt::citekey_from_zotero_sqlite(zdb.conn(), item_key) {
-                return Some(ck);
-            }
+            && let Ok(Some(ck)) = bbt::citekey_from_zotero_sqlite(zdb.conn(), item_key)
+        {
+            return Some(ck);
+        }
         // Fallback to BBT migrated
         if let Some(bdb) = &self.bbt
-            && let Ok(Some(ck)) = bdb.citekey_for_item_key(item_key) {
-                return Some(ck);
-            }
+            && let Ok(Some(ck)) = bdb.citekey_for_item_key(item_key)
+        {
+            return Some(ck);
+        }
         None
     }
 }

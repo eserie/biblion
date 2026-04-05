@@ -28,21 +28,17 @@
 //! let result = paper_resolver::resolve_pdf_async(Some("10.1109/TSE.2010.62"), None, Some("mutation")).await;
 //! ```
 
-use std::sync::LazyLock;
 use regex::Regex;
+use std::sync::LazyLock;
 
-static ARXIV_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"arxiv\.org/(?:abs|pdf)/(\d{4}\.\d{4,5}(?:v\d+)?)").unwrap()
-});
-static PDF_HREF_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"href="(https?://[^"]+\.pdf)""#).unwrap()
-});
+static ARXIV_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"arxiv\.org/(?:abs|pdf)/(\d{4}\.\d{4,5}(?:v\d+)?)").unwrap());
+static PDF_HREF_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"href="(https?://[^"]+\.pdf)""#).unwrap());
 static SSRN_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"href="(https?://papers\.ssrn\.com/sol3/papers\.cfm\?abstract_id=\d+)""#).unwrap()
 });
-static URL_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"https?://[^\s,)]+").unwrap()
-});
+static URL_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"https?://[^\s,)]+").unwrap());
 
 /// Shared tokio runtime for PDF resolution. Created once, reused across calls.
 ///
@@ -98,21 +94,23 @@ pub fn resolve_pdf(
 ) -> Option<ResolvedPdf> {
     // 1. arXiv — instant, no network
     if let Some(doi) = doi
-        && let Some(id) = doi_to_arxiv_id(doi) {
-            return Some(ResolvedPdf {
-                url: format!("https://arxiv.org/pdf/{id}.pdf"),
-                source: "arxiv".into(),
-                downloadable: true,
-            });
-        }
+        && let Some(id) = doi_to_arxiv_id(doi)
+    {
+        return Some(ResolvedPdf {
+            url: format!("https://arxiv.org/pdf/{id}.pdf"),
+            source: "arxiv".into(),
+            downloadable: true,
+        });
+    }
     if let Some(url) = url
-        && let Some(id) = url_to_arxiv_id(url) {
-            return Some(ResolvedPdf {
-                url: format!("https://arxiv.org/pdf/{id}.pdf"),
-                source: "arxiv".into(),
-                downloadable: true,
-            });
-        }
+        && let Some(id) = url_to_arxiv_id(url)
+    {
+        return Some(ResolvedPdf {
+            url: format!("https://arxiv.org/pdf/{id}.pdf"),
+            source: "arxiv".into(),
+            downloadable: true,
+        });
+    }
 
     // 2-9. Concurrent HTTP queries via tokio (shared runtime)
     pdf_runtime().block_on(resolve_pdf_async(doi, title))
@@ -122,10 +120,7 @@ pub fn resolve_pdf(
 ///
 /// Use this when you already have a tokio runtime (e.g., in an async server).
 /// For synchronous callers, use [`resolve_pdf`] instead.
-pub async fn resolve_pdf_async(
-    doi: Option<&str>,
-    title: Option<&str>,
-) -> Option<ResolvedPdf> {
+pub async fn resolve_pdf_async(doi: Option<&str>, title: Option<&str>) -> Option<ResolvedPdf> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(20))
         .redirect(reqwest::redirect::Policy::limited(10))
@@ -146,14 +141,30 @@ pub async fn resolve_pdf_async(
 
     // Collect results with priorities
     let mut candidates: Vec<(u8, ResolvedPdf)> = Vec::new();
-    if let Some(r) = openalex { candidates.push((2, r)); }
-    if let Some(r) = core { candidates.push((3, r)); }
-    if let Some(r) = scholar { candidates.push((4, r)); }
-    if let Some(r) = unpaywall { candidates.push((5, r)); }
-    if let Some(r) = crossref { candidates.push((6, r)); }
-    if let Some(r) = zenodo { candidates.push((7, r)); }
-    if let Some(r) = ssrn { candidates.push((8, r)); }
-    if let Some(r) = semantic { candidates.push((9, r)); }
+    if let Some(r) = openalex {
+        candidates.push((2, r));
+    }
+    if let Some(r) = core {
+        candidates.push((3, r));
+    }
+    if let Some(r) = scholar {
+        candidates.push((4, r));
+    }
+    if let Some(r) = unpaywall {
+        candidates.push((5, r));
+    }
+    if let Some(r) = crossref {
+        candidates.push((6, r));
+    }
+    if let Some(r) = zenodo {
+        candidates.push((7, r));
+    }
+    if let Some(r) = ssrn {
+        candidates.push((8, r));
+    }
+    if let Some(r) = semantic {
+        candidates.push((9, r));
+    }
 
     // Prefer downloadable, then highest priority (lowest number)
     candidates.sort_by_key(|(pri, r)| (!r.downloadable, *pri));
@@ -185,16 +196,26 @@ async fn try_openalex(
         client
             .get(format!("https://api.openalex.org/works/doi:{doi}"))
             .query(&[("select", "open_access,locations,best_oa_location")])
-            .send().await.ok()?
+            .send()
+            .await
+            .ok()?
     } else {
         let title = title?;
         client
             .get("https://api.openalex.org/works")
-            .query(&[("search", title), ("per_page", "1"), ("select", "open_access,locations,best_oa_location")])
-            .send().await.ok()?
+            .query(&[
+                ("search", title),
+                ("per_page", "1"),
+                ("select", "open_access,locations,best_oa_location"),
+            ])
+            .send()
+            .await
+            .ok()?
     };
 
-    if !resp.status().is_success() { return None; }
+    if !resp.status().is_success() {
+        return None;
+    }
     let data: serde_json::Value = resp.json().await.ok()?;
 
     let work = if let Some(results) = data.get("results").and_then(|v| v.as_array()) {
@@ -204,16 +225,36 @@ async fn try_openalex(
     };
 
     // Try best_oa_location.pdf_url → open_access.oa_url → locations[].pdf_url
-    if let Some(url) = work.pointer("/best_oa_location/pdf_url").and_then(|v| v.as_str()) {
-        return Some(ResolvedPdf { url: url.into(), source: "openalex".into(), downloadable: is_downloadable(url) });
+    if let Some(url) = work
+        .pointer("/best_oa_location/pdf_url")
+        .and_then(|v| v.as_str())
+    {
+        return Some(ResolvedPdf {
+            url: url.into(),
+            source: "openalex".into(),
+            downloadable: is_downloadable(url),
+        });
     }
     if let Some(url) = work.pointer("/open_access/oa_url").and_then(|v| v.as_str())
-        && url.ends_with(".pdf") {
-            return Some(ResolvedPdf { url: url.into(), source: "openalex".into(), downloadable: is_downloadable(url) });
-        }
-    for loc in work.get("locations").and_then(|v| v.as_array()).unwrap_or(&vec![]) {
+        && url.ends_with(".pdf")
+    {
+        return Some(ResolvedPdf {
+            url: url.into(),
+            source: "openalex".into(),
+            downloadable: is_downloadable(url),
+        });
+    }
+    for loc in work
+        .get("locations")
+        .and_then(|v| v.as_array())
+        .unwrap_or(&vec![])
+    {
         if let Some(url) = loc.get("pdf_url").and_then(|v| v.as_str()) {
-            return Some(ResolvedPdf { url: url.into(), source: "openalex".into(), downloadable: is_downloadable(url) });
+            return Some(ResolvedPdf {
+                url: url.into(),
+                source: "openalex".into(),
+                downloadable: is_downloadable(url),
+            });
         }
     }
     None
@@ -238,14 +279,22 @@ async fn try_core(
     let resp = client
         .get("https://api.core.ac.uk/v3/search/works")
         .query(&[("q", &query), ("limit", &"1".to_string())])
-        .send().await.ok()?;
+        .send()
+        .await
+        .ok()?;
 
-    if !resp.status().is_success() { return None; }
+    if !resp.status().is_success() {
+        return None;
+    }
     let data: serde_json::Value = resp.json().await.ok()?;
     let work = data.get("results")?.as_array()?.first()?;
 
     if let Some(url) = work.get("downloadUrl").and_then(|v| v.as_str()) {
-        return Some(ResolvedPdf { url: url.into(), source: "core".into(), downloadable: is_downloadable(url) });
+        return Some(ResolvedPdf {
+            url: url.into(),
+            source: "core".into(),
+            downloadable: is_downloadable(url),
+        });
     }
     None
 }
@@ -254,10 +303,7 @@ async fn try_core(
 // Google Scholar
 // ---------------------------------------------------------------------------
 
-async fn try_google_scholar(
-    client: &reqwest::Client,
-    title: Option<&str>,
-) -> Option<ResolvedPdf> {
+async fn try_google_scholar(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {
     let title = title?;
     let resp = client
         .get("https://scholar.google.com/scholar")
@@ -266,23 +312,39 @@ async fn try_google_scholar(
         .header("Accept", "text/html")
         .send().await.ok()?;
 
-    if !resp.status().is_success() { return None; }
+    if !resp.status().is_success() {
+        return None;
+    }
     let html = resp.text().await.ok()?;
 
-    let academic_hosts = [".edu", ".ac.uk", "research.google", "hal.science", "eprint.iacr.org"];
+    let academic_hosts = [
+        ".edu",
+        ".ac.uk",
+        "research.google",
+        "hal.science",
+        "eprint.iacr.org",
+    ];
 
     // Prefer academic hosts
     for cap in PDF_HREF_RE.captures_iter(&html) {
         let url = &cap[1];
         if academic_hosts.iter().any(|h| url.contains(h)) {
-            return Some(ResolvedPdf { url: url.into(), source: "google_scholar".into(), downloadable: true });
+            return Some(ResolvedPdf {
+                url: url.into(),
+                source: "google_scholar".into(),
+                downloadable: true,
+            });
         }
     }
     // Fallback: any downloadable PDF
     for cap in PDF_HREF_RE.captures_iter(&html) {
         let url = &cap[1];
         if is_downloadable(url) {
-            return Some(ResolvedPdf { url: url.into(), source: "google_scholar".into(), downloadable: true });
+            return Some(ResolvedPdf {
+                url: url.into(),
+                source: "google_scholar".into(),
+                downloadable: true,
+            });
         }
     }
     None
@@ -297,17 +359,36 @@ async fn try_unpaywall(client: &reqwest::Client, doi: Option<&str>) -> Option<Re
     let resp = client
         .get(format!("https://api.unpaywall.org/v2/{doi}"))
         .query(&[("email", "zotero-mcp@example.com")])
-        .send().await.ok()?;
+        .send()
+        .await
+        .ok()?;
 
-    if !resp.status().is_success() { return None; }
+    if !resp.status().is_success() {
+        return None;
+    }
     let data: serde_json::Value = resp.json().await.ok()?;
 
-    if let Some(url) = data.pointer("/best_oa_location/url_for_pdf").and_then(|v| v.as_str()) {
-        return Some(ResolvedPdf { url: url.into(), source: "unpaywall".into(), downloadable: is_downloadable(url) });
+    if let Some(url) = data
+        .pointer("/best_oa_location/url_for_pdf")
+        .and_then(|v| v.as_str())
+    {
+        return Some(ResolvedPdf {
+            url: url.into(),
+            source: "unpaywall".into(),
+            downloadable: is_downloadable(url),
+        });
     }
-    for loc in data.get("oa_locations").and_then(|v| v.as_array()).unwrap_or(&vec![]) {
+    for loc in data
+        .get("oa_locations")
+        .and_then(|v| v.as_array())
+        .unwrap_or(&vec![])
+    {
         if let Some(url) = loc.get("url_for_pdf").and_then(|v| v.as_str()) {
-            return Some(ResolvedPdf { url: url.into(), source: "unpaywall".into(), downloadable: is_downloadable(url) });
+            return Some(ResolvedPdf {
+                url: url.into(),
+                source: "unpaywall".into(),
+                downloadable: is_downloadable(url),
+            });
         }
     }
     None
@@ -321,25 +402,51 @@ async fn try_crossref(client: &reqwest::Client, doi: Option<&str>) -> Option<Res
     let doi = doi?;
     let resp = client
         .get(format!("https://api.crossref.org/works/{doi}"))
-        .header("User-Agent", "ZoteroMCP/0.1 (mailto:zotero-mcp@example.com)")
-        .send().await.ok()?;
+        .header(
+            "User-Agent",
+            "ZoteroMCP/0.1 (mailto:zotero-mcp@example.com)",
+        )
+        .send()
+        .await
+        .ok()?;
 
-    if !resp.status().is_success() { return None; }
+    if !resp.status().is_success() {
+        return None;
+    }
     let data: serde_json::Value = resp.json().await.ok()?;
     let msg = data.get("message")?;
 
     // Check resource.primary.URL
-    if let Some(url) = msg.pointer("/resource/primary/URL").and_then(|v| v.as_str())
-        && url.to_lowercase().ends_with(".pdf") {
-            return Some(ResolvedPdf { url: url.into(), source: "crossref".into(), downloadable: is_downloadable(url) });
-        }
+    if let Some(url) = msg
+        .pointer("/resource/primary/URL")
+        .and_then(|v| v.as_str())
+        && url.to_lowercase().ends_with(".pdf")
+    {
+        return Some(ResolvedPdf {
+            url: url.into(),
+            source: "crossref".into(),
+            downloadable: is_downloadable(url),
+        });
+    }
     // Check link[] array
-    for link in msg.get("link").and_then(|v| v.as_array()).unwrap_or(&vec![]) {
-        let ct = link.get("content-type").and_then(|v| v.as_str()).unwrap_or("");
+    for link in msg
+        .get("link")
+        .and_then(|v| v.as_array())
+        .unwrap_or(&vec![])
+    {
+        let ct = link
+            .get("content-type")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
         if ct.contains("pdf")
-            && let Some(url) = link.get("URL").and_then(|v| v.as_str()) {
-                return Some(ResolvedPdf { url: url.into(), source: "crossref".into(), downloadable: is_downloadable(url) });
-            }
+            && let Some(url) = link.get("URL").and_then(|v| v.as_str())
+        {
+            return Some(ResolvedPdf {
+                url: url.into(),
+                source: "crossref".into(),
+                downloadable: is_downloadable(url),
+            });
+        }
     }
     None
 }
@@ -353,17 +460,39 @@ async fn try_zenodo(client: &reqwest::Client, title: Option<&str>) -> Option<Res
     let resp = client
         .get("https://zenodo.org/api/records")
         .query(&[("q", title), ("size", "3"), ("type", "publication")])
-        .send().await.ok()?;
+        .send()
+        .await
+        .ok()?;
 
-    if !resp.status().is_success() { return None; }
+    if !resp.status().is_success() {
+        return None;
+    }
     let data: serde_json::Value = resp.json().await.ok()?;
 
-    for hit in data.pointer("/hits/hits").and_then(|v| v.as_array()).unwrap_or(&vec![]) {
-        for file in hit.get("files").and_then(|v| v.as_array()).unwrap_or(&vec![]) {
-            if file.get("key").and_then(|v| v.as_str()).unwrap_or("").to_lowercase().ends_with(".pdf")
-                && let Some(url) = file.pointer("/links/self").and_then(|v| v.as_str()) {
-                    return Some(ResolvedPdf { url: url.into(), source: "zenodo".into(), downloadable: true });
-                }
+    for hit in data
+        .pointer("/hits/hits")
+        .and_then(|v| v.as_array())
+        .unwrap_or(&vec![])
+    {
+        for file in hit
+            .get("files")
+            .and_then(|v| v.as_array())
+            .unwrap_or(&vec![])
+        {
+            if file
+                .get("key")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_lowercase()
+                .ends_with(".pdf")
+                && let Some(url) = file.pointer("/links/self").and_then(|v| v.as_str())
+            {
+                return Some(ResolvedPdf {
+                    url: url.into(),
+                    source: "zenodo".into(),
+                    downloadable: true,
+                });
+            }
         }
     }
     None
@@ -380,13 +509,21 @@ async fn try_ssrn(client: &reqwest::Client, title: Option<&str>) -> Option<Resol
         .query(&[("txtKey_Words", title), ("npage", "1")])
         .header("User-Agent", "Mozilla/5.0")
         .header("Accept", "text/html")
-        .send().await.ok()?;
+        .send()
+        .await
+        .ok()?;
 
-    if !resp.status().is_success() { return None; }
+    if !resp.status().is_success() {
+        return None;
+    }
     let html = resp.text().await.ok()?;
 
     if let Some(cap) = SSRN_RE.captures(&html) {
-        return Some(ResolvedPdf { url: cap[1].to_string(), source: "ssrn".into(), downloadable: false });
+        return Some(ResolvedPdf {
+            url: cap[1].to_string(),
+            source: "ssrn".into(),
+            downloadable: false,
+        });
     }
     None
 }
@@ -402,18 +539,30 @@ async fn try_semantic_scholar(
 ) -> Option<ResolvedPdf> {
     let resp = if let Some(doi) = doi {
         client
-            .get(format!("https://api.semanticscholar.org/graph/v1/paper/DOI:{doi}"))
+            .get(format!(
+                "https://api.semanticscholar.org/graph/v1/paper/DOI:{doi}"
+            ))
             .query(&[("fields", "openAccessPdf")])
-            .send().await.ok()?
+            .send()
+            .await
+            .ok()?
     } else {
         let title = title?;
         client
             .get("https://api.semanticscholar.org/graph/v1/paper/search")
-            .query(&[("query", title), ("limit", "1"), ("fields", "openAccessPdf")])
-            .send().await.ok()?
+            .query(&[
+                ("query", title),
+                ("limit", "1"),
+                ("fields", "openAccessPdf"),
+            ])
+            .send()
+            .await
+            .ok()?
     };
 
-    if !resp.status().is_success() { return None; }
+    if !resp.status().is_success() {
+        return None;
+    }
     let data: serde_json::Value = resp.json().await.ok()?;
 
     let work = if let Some(items) = data.get("data").and_then(|v| v.as_array()) {
@@ -424,7 +573,11 @@ async fn try_semantic_scholar(
 
     let oa = work.get("openAccessPdf")?;
     if let Some(url) = oa.get("url").and_then(|v| v.as_str()) {
-        return Some(ResolvedPdf { url: url.into(), source: "semantic_scholar".into(), downloadable: is_downloadable(url) });
+        return Some(ResolvedPdf {
+            url: url.into(),
+            source: "semantic_scholar".into(),
+            downloadable: is_downloadable(url),
+        });
     }
     // Disclaimer fallback
     if let Some(disclaimer) = oa.get("disclaimer").and_then(|v| v.as_str()) {
@@ -432,10 +585,18 @@ async fn try_semantic_scholar(
             let url = m.as_str();
             if url.contains("arxiv.org/abs/") {
                 let pdf_url = url.replace("/abs/", "/pdf/");
-                return Some(ResolvedPdf { url: format!("{pdf_url}.pdf"), source: "semantic_scholar".into(), downloadable: true });
+                return Some(ResolvedPdf {
+                    url: format!("{pdf_url}.pdf"),
+                    source: "semantic_scholar".into(),
+                    downloadable: true,
+                });
             }
             if !url.contains("arxiv.org") || url.contains("/pdf/") {
-                return Some(ResolvedPdf { url: url.into(), source: "semantic_scholar".into(), downloadable: is_downloadable(url) });
+                return Some(ResolvedPdf {
+                    url: url.into(),
+                    source: "semantic_scholar".into(),
+                    downloadable: is_downloadable(url),
+                });
             }
         }
     }
@@ -448,7 +609,10 @@ mod tests {
 
     #[test]
     fn doi_to_arxiv_id_valid() {
-        assert_eq!(doi_to_arxiv_id("10.48550/arXiv.2105.15183"), Some("2105.15183".into()));
+        assert_eq!(
+            doi_to_arxiv_id("10.48550/arXiv.2105.15183"),
+            Some("2105.15183".into())
+        );
     }
 
     #[test]
@@ -458,12 +622,18 @@ mod tests {
 
     #[test]
     fn url_to_arxiv_id_abs() {
-        assert_eq!(url_to_arxiv_id("https://arxiv.org/abs/2105.15183"), Some("2105.15183".into()));
+        assert_eq!(
+            url_to_arxiv_id("https://arxiv.org/abs/2105.15183"),
+            Some("2105.15183".into())
+        );
     }
 
     #[test]
     fn url_to_arxiv_id_pdf_versioned() {
-        assert_eq!(url_to_arxiv_id("https://arxiv.org/pdf/2105.15183v2"), Some("2105.15183v2".into()));
+        assert_eq!(
+            url_to_arxiv_id("https://arxiv.org/pdf/2105.15183v2"),
+            Some("2105.15183v2".into())
+        );
     }
 
     #[test]
@@ -491,7 +661,9 @@ mod tests {
     #[test]
     fn is_downloadable_blocked() {
         assert!(!is_downloadable("https://ieeexplore.ieee.org/doc/123.pdf"));
-        assert!(!is_downloadable("https://www.sciencedirect.com/article.pdf"));
+        assert!(!is_downloadable(
+            "https://www.sciencedirect.com/article.pdf"
+        ));
     }
 
     #[test]

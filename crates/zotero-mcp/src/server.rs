@@ -56,7 +56,11 @@ pub fn run_stdio(ctx: &ServerContext) -> Result<()> {
     let mut reader = stdin.lock();
     let mut writer = stdout.lock();
 
-    log(ctx, LogLevel::Info, "Zotero MCP server started (Rust, stdio)");
+    log(
+        ctx,
+        LogLevel::Info,
+        "Zotero MCP server started (Rust, stdio)",
+    );
 
     let mut line = String::new();
     loop {
@@ -86,10 +90,9 @@ pub fn run_stdio(ctx: &ServerContext) -> Result<()> {
         let is_notification = request.id.is_none();
         let response = dispatch(&request, ctx);
 
-        if !is_notification
-            && let Some(resp) = response {
-                write_response(&mut writer, &resp, ctx)?;
-            }
+        if !is_notification && let Some(resp) = response {
+            write_response(&mut writer, &resp, ctx)?;
+        }
     }
 
     Ok(())
@@ -175,7 +178,11 @@ fn handle_tools_call(request: &JsonRpcRequest, ctx: &ServerContext) -> JsonRpcRe
     )
 }
 
-fn write_response(writer: &mut impl Write, response: &JsonRpcResponse, ctx: &ServerContext) -> Result<()> {
+fn write_response(
+    writer: &mut impl Write,
+    response: &JsonRpcResponse,
+    ctx: &ServerContext,
+) -> Result<()> {
     let json = serde_json::to_string(response)?;
     log(ctx, LogLevel::Debug, &format!("> {json}"));
     writeln!(writer, "{json}")?;
@@ -218,7 +225,8 @@ mod tests {
                 zotero_library_id: "1".into(),
                 zotero_library_type: "user".into(),
                 bbt_url: "http://localhost:23119/better-bibtex/json-rpc".into(),
-                log_level: LogLevel::Quiet, writes_enabled: false,
+                log_level: LogLevel::Quiet,
+                writes_enabled: false,
             },
         }
     }

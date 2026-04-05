@@ -22,12 +22,12 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use axum::extract::{Query, State};
-use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::response::IntoResponse;
+use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::routing::{get, post};
-use tokio::sync::{mpsc, RwLock};
-use tokio_stream::wrappers::ReceiverStream;
+use tokio::sync::{RwLock, mpsc};
 use tokio_stream::StreamExt;
+use tokio_stream::wrappers::ReceiverStream;
 
 use crate::config::Config;
 use crate::db::DbPool;
@@ -79,7 +79,11 @@ async fn handle_sse(
     let session_id = uuid::Uuid::new_v4().to_string();
     let (tx, rx) = mpsc::channel::<String>(64);
 
-    state.sessions.write().await.insert(session_id.clone(), tx.clone());
+    state
+        .sessions
+        .write()
+        .await
+        .insert(session_id.clone(), tx.clone());
 
     // Clean up session when client disconnects (sender channel closes)
     let tx_cleanup = tx.clone();
@@ -139,17 +143,19 @@ async fn handle_message(
     // because rusqlite::Connection is not Send+Sync)
     let response = tokio::task::spawn_blocking(move || {
         let db = DbPool::open(&config.zotero_sqlite_path, &config.bbt_migrated_path);
-        let ctx = ServerContext { db, config: (*config).clone() };
+        let ctx = ServerContext {
+            db,
+            config: (*config).clone(),
+        };
         // Reuse shared dispatch from server module
         crate::server::dispatch(&request, &ctx)
     })
     .await;
 
-    if !is_notification
-        && let Ok(Some(resp)) = response {
-            let json = serde_json::to_string(&resp).unwrap_or_default();
-            let _ = tx.send(json).await;
-        }
+    if !is_notification && let Ok(Some(resp)) = response {
+        let json = serde_json::to_string(&resp).unwrap_or_default();
+        let _ = tx.send(json).await;
+    }
 
     axum::http::StatusCode::ACCEPTED
 }
@@ -169,7 +175,8 @@ mod tests {
                 zotero_library_id: "1".into(),
                 zotero_library_type: "user".into(),
                 bbt_url: "http://localhost:23119".into(),
-                log_level: crate::config::LogLevel::Quiet, writes_enabled: false,
+                log_level: crate::config::LogLevel::Quiet,
+                writes_enabled: false,
             },
         }
     }

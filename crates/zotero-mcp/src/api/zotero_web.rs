@@ -32,9 +32,7 @@ pub struct ZoteroWebClient {
 impl ZoteroWebClient {
     /// Create a new client for a user library.
     pub fn new(api_key: &str, library_id: &str, library_type: &str) -> Self {
-        let base_url = format!(
-            "https://api.zotero.org/{library_type}s/{library_id}"
-        );
+        let base_url = format!("https://api.zotero.org/{library_type}s/{library_id}");
         Self {
             client: reqwest::blocking::Client::builder()
                 .timeout(std::time::Duration::from_secs(60))
@@ -48,14 +46,8 @@ impl ZoteroWebClient {
     /// Common headers for all API requests.
     fn headers(&self) -> reqwest::header::HeaderMap {
         let mut h = reqwest::header::HeaderMap::new();
-        h.insert(
-            "Zotero-API-Key",
-            self.api_key.parse().unwrap(),
-        );
-        h.insert(
-            "Zotero-API-Version",
-            "3".parse().unwrap(),
-        );
+        h.insert("Zotero-API-Key", self.api_key.parse().unwrap());
+        h.insert("Zotero-API-Version", "3".parse().unwrap());
         h.insert(
             reqwest::header::CONTENT_TYPE,
             "application/json".parse().unwrap(),
@@ -198,7 +190,12 @@ impl ZoteroWebClient {
     ///
     /// For simplicity in v1, we use the "linked file" attachment method instead,
     /// which just records the path without uploading.
-    pub fn attach_file(&self, parent_key: &str, file_path: &std::path::Path, title: &str) -> Result<Value> {
+    pub fn attach_file(
+        &self,
+        parent_key: &str,
+        file_path: &std::path::Path,
+        title: &str,
+    ) -> Result<Value> {
         let filename = file_path
             .file_name()
             .and_then(|n| n.to_str())

@@ -12,13 +12,13 @@
 //! This module defines the tool catalog (for `tools/list`) and the dispatch
 //! function (for `tools/call`).
 
+pub mod bibliography;
+pub mod bibtex;
+pub mod format;
 pub mod read;
 pub mod write;
-pub mod format;
-pub mod bibtex;
-pub mod bibliography;
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::protocol::{ToolCallResult, ToolDefinition};
 use crate::server::ServerContext;
@@ -62,10 +62,14 @@ pub fn tool_catalog() -> Vec<ToolDefinition> {
     let mut tools = Vec::new();
 
     // --- Read tools (pure SQLite) ---
-    tools.push(tool("zotero_status", "Check Zotero library statistics (item count, collection count).", json!({
-        "type": "object",
-        "properties": {},
-    })));
+    tools.push(tool(
+        "zotero_status",
+        "Check Zotero library statistics (item count, collection count).",
+        json!({
+            "type": "object",
+            "properties": {},
+        }),
+    ));
 
     tools.push(tool("zotero_search", "Search Zotero library items by text query. Returns matching items with citekeys.", json!({
         "type": "object",
@@ -84,34 +88,50 @@ pub fn tool_catalog() -> Vec<ToolDefinition> {
         "required": ["citekey"]
     })));
 
-    tools.push(tool("zotero_get_notes", "Get all notes for an item by its citation key.", json!({
-        "type": "object",
-        "properties": {
-            "citekey": { "type": "string", "description": "Citation key" }
-        },
-        "required": ["citekey"]
-    })));
+    tools.push(tool(
+        "zotero_get_notes",
+        "Get all notes for an item by its citation key.",
+        json!({
+            "type": "object",
+            "properties": {
+                "citekey": { "type": "string", "description": "Citation key" }
+            },
+            "required": ["citekey"]
+        }),
+    ));
 
-    tools.push(tool("zotero_get_pdf_path", "Get filesystem path(s) to PDF attachments for an item.", json!({
-        "type": "object",
-        "properties": {
-            "citekey": { "type": "string", "description": "Citation key" }
-        },
-        "required": ["citekey"]
-    })));
+    tools.push(tool(
+        "zotero_get_pdf_path",
+        "Get filesystem path(s) to PDF attachments for an item.",
+        json!({
+            "type": "object",
+            "properties": {
+                "citekey": { "type": "string", "description": "Citation key" }
+            },
+            "required": ["citekey"]
+        }),
+    ));
 
-    tools.push(tool("zotero_list_attachments", "List all attachments for an item.", json!({
-        "type": "object",
-        "properties": {
-            "citekey": { "type": "string", "description": "Citation key" }
-        },
-        "required": ["citekey"]
-    })));
+    tools.push(tool(
+        "zotero_list_attachments",
+        "List all attachments for an item.",
+        json!({
+            "type": "object",
+            "properties": {
+                "citekey": { "type": "string", "description": "Citation key" }
+            },
+            "required": ["citekey"]
+        }),
+    ));
 
-    tools.push(tool("zotero_get_collections", "List all collections in the library with hierarchy.", json!({
-        "type": "object",
-        "properties": {},
-    })));
+    tools.push(tool(
+        "zotero_get_collections",
+        "List all collections in the library with hierarchy.",
+        json!({
+            "type": "object",
+            "properties": {},
+        }),
+    ));
 
     tools.push(tool("zotero_get_collection_items", "Get items in a specific collection by its key.", json!({
         "type": "object",
@@ -171,34 +191,46 @@ pub fn tool_catalog() -> Vec<ToolDefinition> {
         "required": ["item_type", "title"]
     })));
 
-    tools.push(tool("zotero_update_item", "Update metadata fields of an existing item.", json!({
-        "type": "object",
-        "properties": {
-            "citekey": { "type": "string" },
-            "fields": { "type": "object" },
-            "tags": { "type": "array", "items": { "type": "string" } }
-        },
-        "required": ["citekey"]
-    })));
+    tools.push(tool(
+        "zotero_update_item",
+        "Update metadata fields of an existing item.",
+        json!({
+            "type": "object",
+            "properties": {
+                "citekey": { "type": "string" },
+                "fields": { "type": "object" },
+                "tags": { "type": "array", "items": { "type": "string" } }
+            },
+            "required": ["citekey"]
+        }),
+    ));
 
-    tools.push(tool("zotero_add_tags", "Add tags to an item (preserves existing tags).", json!({
-        "type": "object",
-        "properties": {
-            "citekey": { "type": "string" },
-            "tags": { "type": "array", "items": { "type": "string" } }
-        },
-        "required": ["citekey", "tags"]
-    })));
+    tools.push(tool(
+        "zotero_add_tags",
+        "Add tags to an item (preserves existing tags).",
+        json!({
+            "type": "object",
+            "properties": {
+                "citekey": { "type": "string" },
+                "tags": { "type": "array", "items": { "type": "string" } }
+            },
+            "required": ["citekey", "tags"]
+        }),
+    ));
 
-    tools.push(tool("zotero_add_note", "Add a note to an item.", json!({
-        "type": "object",
-        "properties": {
-            "citekey": { "type": "string" },
-            "content": { "type": "string", "description": "Note content (markdown or HTML)" },
-            "tags": { "type": "array", "items": { "type": "string" } }
-        },
-        "required": ["citekey", "content"]
-    })));
+    tools.push(tool(
+        "zotero_add_note",
+        "Add a note to an item.",
+        json!({
+            "type": "object",
+            "properties": {
+                "citekey": { "type": "string" },
+                "content": { "type": "string", "description": "Note content (markdown or HTML)" },
+                "tags": { "type": "array", "items": { "type": "string" } }
+            },
+            "required": ["citekey", "content"]
+        }),
+    ));
 
     tools.push(tool("zotero_create_collection", "Create a new collection.", json!({
         "type": "object",
@@ -209,61 +241,85 @@ pub fn tool_catalog() -> Vec<ToolDefinition> {
         "required": ["name"]
     })));
 
-    tools.push(tool("zotero_add_to_collection", "Add an item to a collection.", json!({
-        "type": "object",
-        "properties": {
-            "citekey": { "type": "string" },
-            "item_key": { "type": "string" },
-            "collection_key": { "type": "string" }
-        },
-        "required": ["collection_key"]
-    })));
+    tools.push(tool(
+        "zotero_add_to_collection",
+        "Add an item to a collection.",
+        json!({
+            "type": "object",
+            "properties": {
+                "citekey": { "type": "string" },
+                "item_key": { "type": "string" },
+                "collection_key": { "type": "string" }
+            },
+            "required": ["collection_key"]
+        }),
+    ));
 
-    tools.push(tool("zotero_remove_from_collection", "Remove an item from a collection.", json!({
-        "type": "object",
-        "properties": {
-            "citekey": { "type": "string" },
-            "item_key": { "type": "string" },
-            "collection_key": { "type": "string" }
-        },
-        "required": ["collection_key"]
-    })));
+    tools.push(tool(
+        "zotero_remove_from_collection",
+        "Remove an item from a collection.",
+        json!({
+            "type": "object",
+            "properties": {
+                "citekey": { "type": "string" },
+                "item_key": { "type": "string" },
+                "collection_key": { "type": "string" }
+            },
+            "required": ["collection_key"]
+        }),
+    ));
 
-    tools.push(tool("zotero_delete_item", "Delete an item permanently.", json!({
-        "type": "object",
-        "properties": {
-            "citekey": { "type": "string" },
-            "item_key": { "type": "string" }
-        }
-    })));
+    tools.push(tool(
+        "zotero_delete_item",
+        "Delete an item permanently.",
+        json!({
+            "type": "object",
+            "properties": {
+                "citekey": { "type": "string" },
+                "item_key": { "type": "string" }
+            }
+        }),
+    ));
 
-    tools.push(tool("zotero_merge_items", "Merge two duplicate items (keeps one, deletes the other).", json!({
-        "type": "object",
-        "properties": {
-            "keep_citekey": { "type": "string", "description": "Citekey of item to keep" },
-            "delete_citekey": { "type": "string", "description": "Citekey of item to delete" }
-        },
-        "required": ["keep_citekey", "delete_citekey"]
-    })));
+    tools.push(tool(
+        "zotero_merge_items",
+        "Merge two duplicate items (keeps one, deletes the other).",
+        json!({
+            "type": "object",
+            "properties": {
+                "keep_citekey": { "type": "string", "description": "Citekey of item to keep" },
+                "delete_citekey": { "type": "string", "description": "Citekey of item to delete" }
+            },
+            "required": ["keep_citekey", "delete_citekey"]
+        }),
+    ));
 
-    tools.push(tool("zotero_attach_pdf", "Download a PDF and attach it to an item.", json!({
-        "type": "object",
-        "properties": {
-            "item_key": { "type": "string" },
-            "pdf_url": { "type": "string" },
-            "title": { "type": "string" }
-        },
-        "required": ["item_key", "pdf_url"]
-    })));
+    tools.push(tool(
+        "zotero_attach_pdf",
+        "Download a PDF and attach it to an item.",
+        json!({
+            "type": "object",
+            "properties": {
+                "item_key": { "type": "string" },
+                "pdf_url": { "type": "string" },
+                "title": { "type": "string" }
+            },
+            "required": ["item_key", "pdf_url"]
+        }),
+    ));
 
-    tools.push(tool("zotero_fetch_missing_pdfs", "Find and attach PDFs for items missing them (9-source resolver).", json!({
-        "type": "object",
-        "properties": {
-            "collection_key": { "type": "string" },
-            "limit": { "type": "integer", "default": 50 },
-            "dry_run": { "type": "boolean", "default": false }
-        }
-    })));
+    tools.push(tool(
+        "zotero_fetch_missing_pdfs",
+        "Find and attach PDFs for items missing them (9-source resolver).",
+        json!({
+            "type": "object",
+            "properties": {
+                "collection_key": { "type": "string" },
+                "limit": { "type": "integer", "default": 50 },
+                "dry_run": { "type": "boolean", "default": false }
+            }
+        }),
+    ));
 
     tools
 }
@@ -316,7 +372,9 @@ pub fn handle_tool_call(name: &str, args: &Value, ctx: &ServerContext) -> ToolCa
         "zotero_add_tags" => write::zotero_add_tags(args, ctx),
         "zotero_add_note" => write::zotero_add_note(args, ctx),
         "zotero_create_collection" => write::zotero_create_collection(args, ctx),
-        "zotero_add_to_collection" | "zotero_add_item_to_collection" => write::zotero_add_to_collection(args, ctx),
+        "zotero_add_to_collection" | "zotero_add_item_to_collection" => {
+            write::zotero_add_to_collection(args, ctx)
+        }
         "zotero_remove_from_collection" => write::zotero_remove_from_collection(args, ctx),
         "zotero_delete_item" => write::zotero_delete_item(args, ctx),
         "zotero_merge_items" => write::zotero_merge_items(args, ctx),
@@ -345,7 +403,11 @@ mod tests {
     fn catalog_tools_have_input_schema() {
         let catalog = tool_catalog();
         for tool in &catalog {
-            assert!(tool.input_schema.is_object(), "Tool {} missing input_schema", tool.name);
+            assert!(
+                tool.input_schema.is_object(),
+                "Tool {} missing input_schema",
+                tool.name
+            );
         }
     }
 
@@ -361,7 +423,8 @@ mod tests {
                 zotero_library_id: "1".into(),
                 zotero_library_type: "user".into(),
                 bbt_url: "http://localhost:23119".into(),
-                log_level: crate::config::LogLevel::Quiet, writes_enabled: false,
+                log_level: crate::config::LogLevel::Quiet,
+                writes_enabled: false,
             },
         };
         let result = handle_tool_call("nonexistent", &json!({}), &ctx);

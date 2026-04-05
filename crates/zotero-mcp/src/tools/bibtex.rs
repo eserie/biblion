@@ -35,8 +35,8 @@
 
 use std::collections::HashMap;
 
-use crate::db::zotero::{Creator, ZoteroItem};
 use super::format::extract_year;
+use crate::db::zotero::{Creator, ZoteroItem};
 
 /// Map Zotero item types to BibTeX entry types.
 fn bibtex_type(zotero_type: &str) -> &'static str {
@@ -163,16 +163,17 @@ pub fn item_to_bibtex(
 
     for (zotero_field, bibtex_field) in &field_map {
         if let Some(value) = metadata.get(*zotero_field)
-            && !value.is_empty() {
-                // Don't duplicate booktitle from conferenceName if bookTitle exists
-                if *bibtex_field == "booktitle"
-                    && *zotero_field == "conferenceName"
-                    && metadata.contains_key("bookTitle")
-                {
-                    continue;
-                }
-                fields.push((bibtex_field.to_string(), escape_bibtex(value)));
+            && !value.is_empty()
+        {
+            // Don't duplicate booktitle from conferenceName if bookTitle exists
+            if *bibtex_field == "booktitle"
+                && *zotero_field == "conferenceName"
+                && metadata.contains_key("bookTitle")
+            {
+                continue;
             }
+            fields.push((bibtex_field.to_string(), escape_bibtex(value)));
+        }
     }
 
     // Year (extract from date field)
@@ -238,8 +239,18 @@ mod tests {
             url: None,
             abstract_note: None,
             creators: vec![
-                Creator { creator_type: "author".into(), first_name: Some("Richard A.".into()), last_name: "DeMillo".into(), order: 0 },
-                Creator { creator_type: "author".into(), first_name: Some("Richard J.".into()), last_name: "Lipton".into(), order: 1 },
+                Creator {
+                    creator_type: "author".into(),
+                    first_name: Some("Richard A.".into()),
+                    last_name: "DeMillo".into(),
+                    order: 0,
+                },
+                Creator {
+                    creator_type: "author".into(),
+                    first_name: Some("Richard J.".into()),
+                    last_name: "Lipton".into(),
+                    order: 1,
+                },
             ],
             tags: vec![],
             date_added: "2024-01-01".into(),
@@ -264,7 +275,10 @@ mod tests {
 
         assert!(bib.starts_with("@article{demilloHintsTestData1978,"));
         assert!(bib.contains("author = {DeMillo, Richard A. and Lipton, Richard J.}"));
-        assert!(bib.contains("title = {{Hints on Test Data Selection}},"), "Got: {bib}");
+        assert!(
+            bib.contains("title = {{Hints on Test Data Selection}},"),
+            "Got: {bib}"
+        );
         assert!(bib.contains("journal = {Computer}"));
         assert!(bib.contains("year = {1978}"));
         assert!(bib.contains("volume = {11}"));
@@ -333,10 +347,23 @@ mod tests {
             item_key: "X".into(),
             item_type: "bookSection".into(),
             title: "Chapter".into(),
-            date: None, doi: None, url: None, abstract_note: None,
+            date: None,
+            doi: None,
+            url: None,
+            abstract_note: None,
             creators: vec![
-                Creator { creator_type: "author".into(), first_name: Some("Alice".into()), last_name: "Author".into(), order: 0 },
-                Creator { creator_type: "editor".into(), first_name: Some("Bob".into()), last_name: "Editor".into(), order: 1 },
+                Creator {
+                    creator_type: "author".into(),
+                    first_name: Some("Alice".into()),
+                    last_name: "Author".into(),
+                    order: 0,
+                },
+                Creator {
+                    creator_type: "editor".into(),
+                    first_name: Some("Bob".into()),
+                    last_name: "Editor".into(),
+                    order: 1,
+                },
             ],
             tags: vec![],
             date_added: "2024-01-01".into(),

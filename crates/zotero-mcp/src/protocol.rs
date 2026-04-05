@@ -201,7 +201,12 @@ mod tests {
         let resp = JsonRpcResponse::method_not_found(Some(json!(5)), "foo/bar");
         let json = serde_json::to_value(&resp).unwrap();
         assert_eq!(json["error"]["code"], -32601);
-        assert!(json["error"]["message"].as_str().unwrap().contains("foo/bar"));
+        assert!(
+            json["error"]["message"]
+                .as_str()
+                .unwrap()
+                .contains("foo/bar")
+        );
     }
 
     #[test]

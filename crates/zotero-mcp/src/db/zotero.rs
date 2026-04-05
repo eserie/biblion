@@ -295,7 +295,11 @@ impl ZoteroDb {
     }
 
     /// Get item keys in a collection.
-    pub fn collection_items(&self, collection_key: &str, limit: usize) -> Result<Vec<(i64, String)>> {
+    pub fn collection_items(
+        &self,
+        collection_key: &str,
+        limit: usize,
+    ) -> Result<Vec<(i64, String)>> {
         let mut stmt = self.conn.prepare_cached(
             "SELECT i.itemID, i.key
              FROM items i
@@ -498,7 +502,10 @@ mod tests {
         assert_eq!(item.item_type, "journalArticle");
         assert_eq!(item.doi, Some("10.1109/C-M.1978.218136".into()));
         assert_eq!(item.date, Some("1978".into()));
-        assert_eq!(item.abstract_note, Some("Abstract about mutation testing".into()));
+        assert_eq!(
+            item.abstract_note,
+            Some("Abstract about mutation testing".into())
+        );
     }
 
     #[test]

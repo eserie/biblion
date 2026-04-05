@@ -15,7 +15,7 @@
 //! It runs inside Zotero's Electron process, so it requires Zotero to be open.
 
 use anyhow::{Context, Result};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Blocking client for BBT JSON-RPC API.
 ///
@@ -60,7 +60,9 @@ impl BbtRpcClient {
                 "Cannot connect to Zotero. Ensure Zotero is running with Better BibTeX installed."
             })?;
 
-        let body: Value = resp.json().with_context(|| "Invalid JSON response from BBT")?;
+        let body: Value = resp
+            .json()
+            .with_context(|| "Invalid JSON response from BBT")?;
 
         if let Some(error) = body.get("error") {
             let msg = error
@@ -94,7 +96,6 @@ impl BbtRpcClient {
             _ => Ok(result.to_string()),
         }
     }
-
 }
 
 #[cfg(test)]

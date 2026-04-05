@@ -32,8 +32,8 @@
 //!        "params":[["citekey"],{"id":"http://www.zotero.org/styles/apa"}]}'
 //! ```
 
-use crate::db::zotero::{Creator, ZoteroItem};
 use super::format::extract_year;
+use crate::db::zotero::{Creator, ZoteroItem};
 use std::collections::HashMap;
 
 /// Supported native styles. Anything else falls back to BBT.
@@ -269,18 +269,16 @@ fn format_ieee_authors(creators: &[Creator]) -> String {
 
     let formatted: Vec<String> = authors
         .iter()
-        .map(|c| {
-            match &c.first_name {
-                Some(first) if !first.is_empty() => {
-                    let initials: String = first
-                        .split_whitespace()
-                        .map(|w| format!("{}.", w.chars().next().unwrap_or(' ')))
-                        .collect::<Vec<_>>()
-                        .join(" ");
-                    format!("{} {}", initials, c.last_name)
-                }
-                _ => c.last_name.clone(),
+        .map(|c| match &c.first_name {
+            Some(first) if !first.is_empty() => {
+                let initials: String = first
+                    .split_whitespace()
+                    .map(|w| format!("{}.", w.chars().next().unwrap_or(' ')))
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                format!("{} {}", initials, c.last_name)
             }
+            _ => c.last_name.clone(),
         })
         .collect();
 
@@ -313,9 +311,24 @@ mod tests {
             url: None,
             abstract_note: None,
             creators: vec![
-                Creator { creator_type: "author".into(), first_name: Some("Richard A.".into()), last_name: "DeMillo".into(), order: 0 },
-                Creator { creator_type: "author".into(), first_name: Some("Richard J.".into()), last_name: "Lipton".into(), order: 1 },
-                Creator { creator_type: "author".into(), first_name: Some("Fred G.".into()), last_name: "Sayward".into(), order: 2 },
+                Creator {
+                    creator_type: "author".into(),
+                    first_name: Some("Richard A.".into()),
+                    last_name: "DeMillo".into(),
+                    order: 0,
+                },
+                Creator {
+                    creator_type: "author".into(),
+                    first_name: Some("Richard J.".into()),
+                    last_name: "Lipton".into(),
+                    order: 1,
+                },
+                Creator {
+                    creator_type: "author".into(),
+                    first_name: Some("Fred G.".into()),
+                    last_name: "Sayward".into(),
+                    order: 2,
+                },
             ],
             tags: vec![],
             date_added: "2024-01-01".into(),
@@ -338,7 +351,10 @@ mod tests {
     fn apa_journal_article() {
         let bib = format_apa(&demillo_item(), &demillo_metadata());
         // APA: "DeMillo, R. A., Lipton, R. J., & Sayward, F. G. (1978). Hints on..."
-        assert!(bib.contains("DeMillo, R. A., Lipton, R. J., & Sayward, F. G."), "Got: {bib}");
+        assert!(
+            bib.contains("DeMillo, R. A., Lipton, R. J., & Sayward, F. G."),
+            "Got: {bib}"
+        );
         assert!(bib.contains("(1978)."));
         assert!(bib.contains("Hints on Test Data Selection"));
         assert!(bib.contains("*Computer*, *11*(4), 34-41."));
@@ -349,8 +365,18 @@ mod tests {
     fn apa_two_authors() {
         let mut item = demillo_item();
         item.creators = vec![
-            Creator { creator_type: "author".into(), first_name: Some("Yue".into()), last_name: "Jia".into(), order: 0 },
-            Creator { creator_type: "author".into(), first_name: Some("Mark".into()), last_name: "Harman".into(), order: 1 },
+            Creator {
+                creator_type: "author".into(),
+                first_name: Some("Yue".into()),
+                last_name: "Jia".into(),
+                order: 0,
+            },
+            Creator {
+                creator_type: "author".into(),
+                first_name: Some("Mark".into()),
+                last_name: "Harman".into(),
+                order: 1,
+            },
         ];
         let bib = format_apa(&item, &HashMap::new());
         assert!(bib.contains("Jia, Y. & Harman, M."), "Got: {bib}");
@@ -359,9 +385,12 @@ mod tests {
     #[test]
     fn apa_single_author() {
         let mut item = demillo_item();
-        item.creators = vec![
-            Creator { creator_type: "author".into(), first_name: Some("Yue".into()), last_name: "Jia".into(), order: 0 },
-        ];
+        item.creators = vec![Creator {
+            creator_type: "author".into(),
+            first_name: Some("Yue".into()),
+            last_name: "Jia".into(),
+            order: 0,
+        }];
         let bib = format_apa(&item, &HashMap::new());
         assert!(bib.starts_with("Jia, Y."), "Got: {bib}");
     }
@@ -384,7 +413,10 @@ mod tests {
     fn ieee_journal_article() {
         let bib = format_ieee(&demillo_item(), &demillo_metadata());
         // IEEE: "R. A. DeMillo, R. J. Lipton, and F. G. Sayward, "Hints on..."
-        assert!(bib.contains("R. A. DeMillo, R. J. Lipton, and F. G. Sayward"), "Got: {bib}");
+        assert!(
+            bib.contains("R. A. DeMillo, R. J. Lipton, and F. G. Sayward"),
+            "Got: {bib}"
+        );
         assert!(bib.contains("\"Hints on Test Data Selection"));
         assert!(bib.contains("*Computer*"));
         assert!(bib.contains("vol. 11"));
@@ -397,8 +429,18 @@ mod tests {
     fn ieee_two_authors() {
         let mut item = demillo_item();
         item.creators = vec![
-            Creator { creator_type: "author".into(), first_name: Some("Goran".into()), last_name: "Petrovic".into(), order: 0 },
-            Creator { creator_type: "author".into(), first_name: Some("Marko".into()), last_name: "Ivankovic".into(), order: 1 },
+            Creator {
+                creator_type: "author".into(),
+                first_name: Some("Goran".into()),
+                last_name: "Petrovic".into(),
+                order: 0,
+            },
+            Creator {
+                creator_type: "author".into(),
+                first_name: Some("Marko".into()),
+                last_name: "Ivankovic".into(),
+                order: 1,
+            },
         ];
         let bib = format_ieee(&item, &HashMap::new());
         assert!(bib.contains("G. Petrovic and M. Ivankovic"), "Got: {bib}");
@@ -413,7 +455,9 @@ mod tests {
         assert!(is_native_style("APA"));
         assert!(is_native_style("http://www.zotero.org/styles/ieee"));
         assert!(is_native_style("IEEE"));
-        assert!(!is_native_style("http://www.zotero.org/styles/chicago-author-date"));
+        assert!(!is_native_style(
+            "http://www.zotero.org/styles/chicago-author-date"
+        ));
         assert!(!is_native_style("vancouver"));
     }
 
@@ -421,18 +465,14 @@ mod tests {
 
     #[test]
     fn ieee_list_is_numbered() {
-        let items = vec![
-            (demillo_item(), demillo_metadata()),
-        ];
+        let items = vec![(demillo_item(), demillo_metadata())];
         let list = format_bibliography_list(&items, "ieee");
         assert!(list.starts_with("[1]"), "Got: {list}");
     }
 
     #[test]
     fn apa_list_is_not_numbered() {
-        let items = vec![
-            (demillo_item(), demillo_metadata()),
-        ];
+        let items = vec![(demillo_item(), demillo_metadata())];
         let list = format_bibliography_list(&items, "apa");
         assert!(!list.starts_with("[1]"));
         assert!(list.starts_with("DeMillo"), "Got: {list}");

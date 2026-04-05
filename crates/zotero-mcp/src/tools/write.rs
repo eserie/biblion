@@ -9,7 +9,7 @@
 //! because the bottleneck is the Zotero API, not our code. This is expected
 //! and acceptable — writes are rare in MCP usage.
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::api::bbt_rpc::BbtRpcClient;
 use crate::api::zotero_web::ZoteroWebClient;
@@ -21,11 +21,10 @@ fn get_write_client(ctx: &ServerContext) -> Result<ZoteroWebClient, String> {
     if !ctx.config.writes_enabled {
         return Err("Write tools disabled. Set ZOTERO_MCP_ENABLE_WRITES=true to enable.".into());
     }
-    let api_key = ctx
-        .config
-        .zotero_api_key
-        .as_deref()
-        .ok_or_else(|| "Write access requires ZOTERO_API_KEY environment variable.".to_string())?;
+    let api_key =
+        ctx.config.zotero_api_key.as_deref().ok_or_else(|| {
+            "Write access requires ZOTERO_API_KEY environment variable.".to_string()
+        })?;
     Ok(ZoteroWebClient::new(
         api_key,
         &ctx.config.zotero_library_id,
@@ -51,7 +50,11 @@ pub fn zotero_get_bibtex(args: &Value, ctx: &ServerContext) -> ToolCallResult {
             None => return ToolCallResult::error("Missing parameter: citekeys or citekey".into()),
         },
     };
-    let format = match args.get("format").and_then(|v| v.as_str()).unwrap_or("bibtex") {
+    let format = match args
+        .get("format")
+        .and_then(|v| v.as_str())
+        .unwrap_or("bibtex")
+    {
         f if f.to_lowercase().contains("biblatex") => "biblatex",
         _ => "bibtex",
     };
@@ -140,7 +143,11 @@ pub fn zotero_get_bibliography(args: &Value, ctx: &ServerContext) -> ToolCallRes
 
 /// Export a collection or item list as BibTeX/BibLaTeX — native, no BBT needed.
 pub fn zotero_export_bibtex(args: &Value, ctx: &ServerContext) -> ToolCallResult {
-    let format = match args.get("format").and_then(|v| v.as_str()).unwrap_or("biblatex") {
+    let format = match args
+        .get("format")
+        .and_then(|v| v.as_str())
+        .unwrap_or("biblatex")
+    {
         f if f.to_lowercase().contains("biblatex") => "biblatex",
         _ => "bibtex",
     };
@@ -151,19 +158,25 @@ pub fn zotero_export_bibtex(args: &Value, ctx: &ServerContext) -> ToolCallResult
     };
 
     // Get item keys from collection or explicit list
-    let item_keys: Vec<(i64, String)> = if let Some(collection_key) = args.get("collection_key").and_then(|v| v.as_str()) {
-        match zdb.collection_items(collection_key, 1000) {
-            Ok(items) => items,
-            Err(e) => return ToolCallResult::error(e.to_string()),
-        }
-    } else if let Some(keys) = args.get("item_keys").and_then(|v| v.as_array()) {
-        keys.iter()
-            .filter_map(|v| v.as_str())
-            .filter_map(|key| zdb.item_by_key(key).ok().flatten().map(|item| (item.item_id, item.item_key)))
-            .collect()
-    } else {
-        return ToolCallResult::error("Provide either collection_key or item_keys".into());
-    };
+    let item_keys: Vec<(i64, String)> =
+        if let Some(collection_key) = args.get("collection_key").and_then(|v| v.as_str()) {
+            match zdb.collection_items(collection_key, 1000) {
+                Ok(items) => items,
+                Err(e) => return ToolCallResult::error(e.to_string()),
+            }
+        } else if let Some(keys) = args.get("item_keys").and_then(|v| v.as_array()) {
+            keys.iter()
+                .filter_map(|v| v.as_str())
+                .filter_map(|key| {
+                    zdb.item_by_key(key)
+                        .ok()
+                        .flatten()
+                        .map(|item| (item.item_id, item.item_key))
+                })
+                .collect()
+        } else {
+            return ToolCallResult::error("Provide either collection_key or item_keys".into());
+        };
 
     if item_keys.is_empty() {
         return ToolCallResult::text("No items found to export.".into());
@@ -172,7 +185,9 @@ pub fn zotero_export_bibtex(args: &Value, ctx: &ServerContext) -> ToolCallResult
     let mut entries = Vec::new();
     for (_item_id, item_key) in &item_keys {
         if let Ok(Some(item)) = zdb.item_by_key(item_key) {
-            let citekey = ctx.db.citekey_for_item_key(item_key)
+            let citekey = ctx
+                .db
+                .citekey_for_item_key(item_key)
                 .unwrap_or_else(|| item_key.clone());
             let metadata = zdb.item_metadata(item.item_id).unwrap_or_default();
             entries.push((item, citekey, metadata));
@@ -238,7 +253,10 @@ pub fn zotero_create_item(args: &Value, ctx: &ServerContext) -> ToolCallResult {
     }
 
     match client.create_items(&[template]) {
-        Ok(result) => ToolCallResult::text(format!("Item created: {}", serde_json::to_string_pretty(&result).unwrap_or_default())),
+        Ok(result) => ToolCallResult::text(format!(
+            "Item created: {}",
+            serde_json::to_string_pretty(&result).unwrap_or_default()
+        )),
         Err(e) => ToolCallResult::error(format!("Failed to create item: {e}")),
     }
 }
@@ -395,12 +413,13 @@ pub fn zotero_create_collection(args: &Value, ctx: &ServerContext) -> ToolCallRe
     // Check if collection already exists (via local SQLite)
     if let Ok(zdb) = ctx.db.zotero()
         && let Ok(colls) = zdb.collections()
-            && let Some(existing) = colls.iter().find(|c| c.name == name) {
-                return ToolCallResult::text(format!(
-                    "Collection '{}' already exists (key: {}).",
-                    name, existing.key
-                ));
-            }
+        && let Some(existing) = colls.iter().find(|c| c.name == name)
+    {
+        return ToolCallResult::text(format!(
+            "Collection '{}' already exists (key: {}).",
+            name, existing.key
+        ));
+    }
 
     let mut coll = json!({"name": name});
     if let Some(parent_key) = args.get("parent_key").and_then(|v| v.as_str()) {
@@ -430,7 +449,10 @@ pub fn zotero_add_to_collection(args: &Value, ctx: &ServerContext) -> ToolCallRe
 
     // Accept either citekey or item_key
     let item_key = if let Some(ck) = args.get("citekey").and_then(|v| v.as_str()) {
-        match resolve_citekey(ctx, ck) { Ok(k) => k, Err(e) => return ToolCallResult::error(e) }
+        match resolve_citekey(ctx, ck) {
+            Ok(k) => k,
+            Err(e) => return ToolCallResult::error(e),
+        }
     } else if let Some(ik) = args.get("item_key").and_then(|v| v.as_str()) {
         ik.to_string()
     } else {
@@ -456,11 +478,15 @@ pub fn zotero_add_to_collection(args: &Value, ctx: &ServerContext) -> ToolCallRe
         collections.push(collection_key.to_string());
         data["collections"] = json!(collections);
         match client.update_item(&item_key, &data, version) {
-            Ok(()) => ToolCallResult::text(format!("Item {item_key} added to collection {collection_key}.")),
+            Ok(()) => ToolCallResult::text(format!(
+                "Item {item_key} added to collection {collection_key}."
+            )),
             Err(e) => ToolCallResult::error(format!("Failed: {e}")),
         }
     } else {
-        ToolCallResult::text(format!("Item {item_key} already in collection {collection_key}."))
+        ToolCallResult::text(format!(
+            "Item {item_key} already in collection {collection_key}."
+        ))
     }
 }
 
@@ -476,7 +502,10 @@ pub fn zotero_remove_from_collection(args: &Value, ctx: &ServerContext) -> ToolC
     };
 
     let item_key = if let Some(ck) = args.get("citekey").and_then(|v| v.as_str()) {
-        match resolve_citekey(ctx, ck) { Ok(k) => k, Err(e) => return ToolCallResult::error(e) }
+        match resolve_citekey(ctx, ck) {
+            Ok(k) => k,
+            Err(e) => return ToolCallResult::error(e),
+        }
     } else if let Some(ik) = args.get("item_key").and_then(|v| v.as_str()) {
         ik.to_string()
     } else {
@@ -512,7 +541,10 @@ pub fn zotero_delete_item(args: &Value, ctx: &ServerContext) -> ToolCallResult {
     };
 
     let item_key = if let Some(ck) = args.get("citekey").and_then(|v| v.as_str()) {
-        match resolve_citekey(ctx, ck) { Ok(k) => k, Err(e) => return ToolCallResult::error(e) }
+        match resolve_citekey(ctx, ck) {
+            Ok(k) => k,
+            Err(e) => return ToolCallResult::error(e),
+        }
     } else if let Some(ik) = args.get("item_key").and_then(|v| v.as_str()) {
         ik.to_string()
     } else {
@@ -611,7 +643,9 @@ pub fn zotero_merge_items(args: &Value, ctx: &ServerContext) -> ToolCallResult {
         return ToolCallResult::error(format!("Merged but failed to delete duplicate: {e}"));
     }
 
-    ToolCallResult::text(format!("Merged {delete_ck} into {keep_ck}. Deleted {delete_ck}."))
+    ToolCallResult::text(format!(
+        "Merged {delete_ck} into {keep_ck}. Deleted {delete_ck}."
+    ))
 }
 
 pub fn zotero_attach_pdf(args: &Value, ctx: &ServerContext) -> ToolCallResult {
@@ -633,10 +667,11 @@ pub fn zotero_attach_pdf(args: &Value, ctx: &ServerContext) -> ToolCallResult {
     // Check if item already has a PDF
     if let Ok(zdb) = ctx.db.zotero()
         && let Ok(Some(item)) = zdb.item_by_key(item_key)
-            && let Ok(atts) = zdb.item_attachments(item.item_id)
-                && atts.iter().any(|a| a.content_type == "application/pdf") {
-                    return ToolCallResult::text(format!("Item {item_key} already has a PDF attachment."));
-                }
+        && let Ok(atts) = zdb.item_attachments(item.item_id)
+        && atts.iter().any(|a| a.content_type == "application/pdf")
+    {
+        return ToolCallResult::text(format!("Item {item_key} already has a PDF attachment."));
+    }
 
     // Validate item_key is alphanumeric (prevent path traversal)
     if !item_key.chars().all(|c| c.is_ascii_alphanumeric()) {
@@ -665,7 +700,10 @@ pub fn zotero_attach_pdf(args: &Value, ctx: &ServerContext) -> ToolCallResult {
 
 /// Scan items for missing PDFs and resolve from 9 open-access sources.
 pub fn zotero_fetch_missing_pdfs(args: &Value, ctx: &ServerContext) -> ToolCallResult {
-    let dry_run = args.get("dry_run").and_then(|v| v.as_bool()).unwrap_or(false);
+    let dry_run = args
+        .get("dry_run")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
     let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(50) as usize;
     let collection_key = args.get("collection_key").and_then(|v| v.as_str());
 
@@ -690,7 +728,8 @@ pub fn zotero_fetch_missing_pdfs(args: &Value, ctx: &ServerContext) -> ToolCallR
     // Filter to items without PDF attachments
     let mut missing: Vec<(String, Option<String>, Option<String>)> = Vec::new(); // (item_key, doi, title)
     for (item_id, item_key) in &items_to_scan {
-        let has_pdf = zdb.item_attachments(*item_id)
+        let has_pdf = zdb
+            .item_attachments(*item_id)
             .map(|atts| atts.iter().any(|a| a.content_type == "application/pdf"))
             .unwrap_or(false);
 
@@ -721,13 +760,11 @@ pub fn zotero_fetch_missing_pdfs(args: &Value, ctx: &ServerContext) -> ToolCallR
     let mut attached = 0;
 
     for (item_key, doi, title) in &missing {
-        let result = paper_resolver::resolve_pdf(
-            doi.as_deref(),
-            None,
-            title.as_deref(),
-        );
+        let result = paper_resolver::resolve_pdf(doi.as_deref(), None, title.as_deref());
 
-        let citekey = ctx.db.citekey_for_item_key(item_key)
+        let citekey = ctx
+            .db
+            .citekey_for_item_key(item_key)
             .unwrap_or_else(|| item_key.clone());
 
         match result {
@@ -759,7 +796,9 @@ pub fn zotero_fetch_missing_pdfs(args: &Value, ctx: &ServerContext) -> ToolCallR
                                     ));
                                 }
                                 Err(e) => {
-                                    output.push_str(&format!("[error] {citekey} — attach failed: {e}\n"));
+                                    output.push_str(&format!(
+                                        "[error] {citekey} — attach failed: {e}\n"
+                                    ));
                                 }
                             }
                             let _ = std::fs::remove_file(&tmp);
@@ -790,4 +829,3 @@ pub fn zotero_fetch_missing_pdfs(args: &Value, ctx: &ServerContext) -> ToolCallR
 
     ToolCallResult::text(output)
 }
-

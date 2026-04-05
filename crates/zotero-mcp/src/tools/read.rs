@@ -33,8 +33,16 @@ pub fn zotero_status(ctx: &ServerContext) -> ToolCallResult {
 
     let items = zdb.item_count().unwrap_or(0);
     let collections = zdb.collection_count().unwrap_or(0);
-    let bbt_status = if ctx.db.bbt.is_some() { "connected" } else { "unavailable" };
-    let write_status = if ctx.config.has_write_access() { "enabled" } else { "disabled (no API key)" };
+    let bbt_status = if ctx.db.bbt.is_some() {
+        "connected"
+    } else {
+        "unavailable"
+    };
+    let write_status = if ctx.config.has_write_access() {
+        "enabled"
+    } else {
+        "disabled (no API key)"
+    };
 
     ToolCallResult::text(format!(
         "Zotero MCP (Rust)\n\
@@ -150,13 +158,15 @@ pub fn zotero_get_notes(args: &Value, ctx: &ServerContext) -> ToolCallResult {
     };
 
     match zdb.item_notes(item.item_id) {
-        Ok(notes) if notes.is_empty() => {
-            ToolCallResult::text(format!("No notes for {citekey}"))
-        }
+        Ok(notes) if notes.is_empty() => ToolCallResult::text(format!("No notes for {citekey}")),
         Ok(notes) => {
             let mut output = format!("{} note(s) for {citekey}:\n\n", notes.len());
             for (i, note) in notes.iter().enumerate() {
-                output.push_str(&format!("--- Note {} ---\n{}\n\n", i + 1, html_to_text(note)));
+                output.push_str(&format!(
+                    "--- Note {} ---\n{}\n\n",
+                    i + 1,
+                    html_to_text(note)
+                ));
             }
             ToolCallResult::text(output)
         }
@@ -207,7 +217,9 @@ pub fn zotero_get_pdf_path(args: &Value, ctx: &ServerContext) -> ToolCallResult 
                         ctx.config.zotero_storage_path.to_str().unwrap_or(""),
                         &a.item_key,
                         filename,
-                    ].iter().collect();
+                    ]
+                    .iter()
+                    .collect();
                     full_path.to_string_lossy().to_string()
                 } else {
                     p.clone()

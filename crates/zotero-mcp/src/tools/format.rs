@@ -4,7 +4,7 @@
 //! that Claude can parse and present to users. Mirrors the Python
 //! `format_item_summary()` function.
 
-use crate::db::zotero::{ZoteroItem, Creator};
+use crate::db::zotero::{Creator, ZoteroItem};
 
 /// Format a ZoteroItem as a concise text summary.
 ///
@@ -94,9 +94,11 @@ pub fn html_to_text(html: &str) -> String {
                     || tag.starts_with("/div")
                     || tag.starts_with("/h")
                     || tag.starts_with("br"))
-                    && !result.ends_with('\n') && !result.is_empty() {
-                        result.push('\n');
-                    }
+                    && !result.ends_with('\n')
+                    && !result.is_empty()
+                {
+                    result.push('\n');
+                }
             }
             _ if in_tag => {
                 tag_buf.push(ch);
@@ -117,9 +119,10 @@ pub fn extract_year(date: &str) -> Option<String> {
     for word in date.split(|c: char| !c.is_ascii_digit()) {
         if word.len() == 4
             && let Ok(y) = word.parse::<u32>()
-                && (1800..=2100).contains(&y) {
-                    return Some(word.to_string());
-                }
+            && (1800..=2100).contains(&y)
+        {
+            return Some(word.to_string());
+        }
     }
     None
 }
@@ -140,8 +143,18 @@ mod tests {
             url: None,
             abstract_note: None,
             creators: vec![
-                Creator { creator_type: "author".into(), first_name: Some("Richard".into()), last_name: "DeMillo".into(), order: 0 },
-                Creator { creator_type: "author".into(), first_name: Some("Richard".into()), last_name: "Lipton".into(), order: 1 },
+                Creator {
+                    creator_type: "author".into(),
+                    first_name: Some("Richard".into()),
+                    last_name: "DeMillo".into(),
+                    order: 0,
+                },
+                Creator {
+                    creator_type: "author".into(),
+                    first_name: Some("Richard".into()),
+                    last_name: "Lipton".into(),
+                    order: 1,
+                },
             ],
             tags: vec!["mutation-testing".into()],
             date_added: "2024-01-01".into(),
@@ -179,25 +192,41 @@ mod tests {
     #[test]
     fn format_creators_with_initials() {
         let creators = vec![
-            Creator { creator_type: "author".into(), first_name: Some("John".into()), last_name: "Doe".into(), order: 0 },
-            Creator { creator_type: "author".into(), first_name: Some("Jane".into()), last_name: "Smith".into(), order: 1 },
+            Creator {
+                creator_type: "author".into(),
+                first_name: Some("John".into()),
+                last_name: "Doe".into(),
+                order: 0,
+            },
+            Creator {
+                creator_type: "author".into(),
+                first_name: Some("Jane".into()),
+                last_name: "Smith".into(),
+                order: 1,
+            },
         ];
         assert_eq!(format_creators(&creators), "Doe, J.; Smith, J.");
     }
 
     #[test]
     fn format_creators_multi_word_first_name() {
-        let creators = vec![
-            Creator { creator_type: "author".into(), first_name: Some("Richard A.".into()), last_name: "DeMillo".into(), order: 0 },
-        ];
+        let creators = vec![Creator {
+            creator_type: "author".into(),
+            first_name: Some("Richard A.".into()),
+            last_name: "DeMillo".into(),
+            order: 0,
+        }];
         assert_eq!(format_creators(&creators), "DeMillo, R. A.");
     }
 
     #[test]
     fn format_creators_no_first_name() {
-        let creators = vec![
-            Creator { creator_type: "author".into(), first_name: None, last_name: "Organization".into(), order: 0 },
-        ];
+        let creators = vec![Creator {
+            creator_type: "author".into(),
+            first_name: None,
+            last_name: "Organization".into(),
+            order: 0,
+        }];
         assert_eq!(format_creators(&creators), "Organization");
     }
 
@@ -215,7 +244,10 @@ mod tests {
     fn html_to_text_inserts_newlines_between_paragraphs() {
         let html = "<p>First paragraph</p><p>Second paragraph</p>";
         let text = html_to_text(html);
-        assert!(text.contains("First paragraph\nSecond paragraph"), "Got: {text}");
+        assert!(
+            text.contains("First paragraph\nSecond paragraph"),
+            "Got: {text}"
+        );
     }
 
     #[test]
