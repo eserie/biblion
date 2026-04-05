@@ -5,172 +5,152 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/protocol-MCP_2024--11--05-purple)](https://modelcontextprotocol.io)
 
-High-performance MCP server that gives LLMs sub-millisecond access to your Zotero library. Rust. Direct SQLite. No plugins required.
+An MCP server that connects your Zotero library to Claude and other LLMs. Search papers, export BibTeX, generate bibliographies, and find open-access PDFs — all from your AI assistant.
 
 ---
 
-You ask Claude a question about a paper in your Zotero library. The MCP server
-looks it up, finds the BibTeX, locates the PDF. How long should that take?
+## What it does
 
-The existing Python MCP server for Zotero takes 500ms-2s per query. Most of that
-time is spent round-tripping through Better BibTeX's JSON-RPC interface --
-JavaScript running inside Zotero's Electron process. **zotero-mcp** skips all of
-that. It reads Zotero's SQLite database directly, because it turns out citation
-keys are already stored there. The result: reads that took 500ms now complete in
-under a millisecond. A single 5.8 MB binary. 97 tests. 25 tools that give your
-LLM full access to your reference library -- search, cite, export BibTeX, format
-bibliographies, resolve PDFs from 9 academic sources.
-
-Two transports: stdio for Claude Code (CLI), SSE for Claude Desktop. Install it,
-point it at your Zotero database, and your LLM can cite papers as fast as you can
-think of them.
+You ask Claude "find me the BibTeX for that portfolio optimization paper" and it searches your Zotero library, finds the item, and returns the citation — in under a millisecond. No plugins needed, Zotero does not even need to be running. The server reads your local Zotero database directly and exposes 26 tools: search, browse, cite, export, organize, and resolve PDFs from 9 academic sources.
 
 ## Quick start
 
+**1. Build and install**
+
 ```bash
-# Build from source
 git clone https://github.com/eserie/zotero-mcp-rs.git
 cd zotero-mcp-rs
 cargo build --release
-
-# Install
 cp target/release/zotero-mcp ~/.local/bin/
-
-# Configure Claude Code (stdio)
-# Add to ~/.claude.json under "mcpServers":
-{
-  "zotero": {
-    "command": "/path/to/zotero-mcp",
-    "env": {
-      "ZOTERO_API_KEY": "your-api-key-here"
-    }
-  }
-}
-
-# Verify
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | zotero-mcp
 ```
 
-## Available tools
+**2. Add to Claude Code** (in `~/.claude.json` under `"mcpServers"`):
 
-### Search & Browse
+```json
+{
+  "zotero": {
+    "command": "zotero-mcp"
+  }
+}
+```
 
-| Tool | Description |
+**3. Verify**
+
+```bash
+zotero-mcp --info
+```
+
+That is it. Claude can now search your library, export citations, and format bibliographies.
+
+> For **Claude Desktop**, use SSE mode instead — see [Configuration](#sse-mode) below.
+
+## Features
+
+### Read tools — instant, no network needed
+
+| Tool | What it does |
 |------|-------------|
 | `zotero_search` | Full-text search across titles, DOIs, abstracts |
-| `zotero_get_item` | Get full metadata for an item by citation key |
+| `zotero_get_item` | Full metadata for an item by citation key |
 | `zotero_get_recent` | Recently modified items |
 | `zotero_get_collections` | List all collections with hierarchy |
 | `zotero_get_collection_items` | Items in a specific collection |
+| `zotero_get_notes` | Item notes (HTML converted to text) |
+| `zotero_get_pdf_path` | Filesystem path to PDF attachments |
+| `zotero_list_attachments` | All attachments for an item |
 | `zotero_status` | Library statistics |
 
-### Citations & Export
+### Citations and export
 
-| Tool | Description |
+| Tool | What it does |
 |------|-------------|
-| `zotero_get_bibtex` | Export as BibTeX or BibLaTeX (native, no BBT needed) |
-| `zotero_get_bibliography` | Formatted bibliography (APA, IEEE native; others via BBT fallback) |
-| `zotero_export_bibtex` | Export entire collection as BibTeX |
+| `zotero_get_bibtex` | Export as BibTeX or BibLaTeX |
+| `zotero_get_bibliography` | Formatted bibliography (APA, IEEE, and more) |
+| `zotero_export_bibtex` | Export an entire collection as BibTeX |
 
-### Attachments & Notes
+### Paper discovery — search and resolve PDFs beyond your library
 
-| Tool | Description |
+| Tool | What it does |
 |------|-------------|
-| `zotero_get_pdf_path` | Filesystem paths to PDF attachments |
-| `zotero_list_attachments` | All attachments for an item |
-| `zotero_get_notes` | Item notes (HTML to text) |
+| `paper_search` | Search for open-access papers by title or keywords |
+| `paper_resolve_pdf` | Find a downloadable PDF by DOI, title, or URL |
+| `paper_source_status` | Show configured sources and their status |
 
-### Write Operations (requires API key)
+PDF resolution queries 9 academic sources concurrently: arXiv, OpenAlex, CORE, Google Scholar, Unpaywall, Crossref, Zenodo, SSRN, and Semantic Scholar.
 
-| Tool | Description |
+### Write tools — organize your library from the chat
+
+| Tool | What it does |
 |------|-------------|
 | `zotero_create_item` | Create a new library item |
 | `zotero_update_item` | Update metadata fields |
 | `zotero_add_tags` | Add tags (preserves existing) |
 | `zotero_add_note` | Add a note to an item |
 | `zotero_create_collection` | Create a new collection |
-| `zotero_add_to_collection` | Add item to collection |
-| `zotero_remove_from_collection` | Remove item from collection |
-| `zotero_delete_item` | Delete permanently |
-| `zotero_merge_items` | Merge duplicates |
+| `zotero_add_to_collection` | Add item to a collection |
+| `zotero_remove_from_collection` | Remove item from a collection |
+| `zotero_delete_item` | Delete an item permanently |
+| `zotero_merge_items` | Merge duplicate items |
 | `zotero_attach_pdf` | Download and attach a PDF |
-| `zotero_fetch_missing_pdfs` | Bulk PDF resolution from 9 academic sources |
+| `zotero_fetch_missing_pdfs` | Bulk-find PDFs for items missing them |
 
-### PDF Resolver Sources
-
-The PDF resolver queries 9 sources concurrently and returns the best
-downloadable result:
-
-1. **arXiv** -- instant regex match (no network)
-2. **OpenAlex** -- 250M+ works
-3. **CORE** -- 300M+ open-access works
-4. **Google Scholar** -- university mirrors, author pages
-5. **Unpaywall** -- 30M+ OA articles
-6. **Crossref** -- publisher PDF links
-7. **Zenodo** -- cross-disciplinary preprints (CERN)
-8. **SSRN** -- finance/economics preprints
-9. **Semantic Scholar** -- OA PDFs + disclaimer field parsing
-
-## Comparison
-
-|                          | **zotero-mcp** (Rust) | zotero-mcp (Python) | BBT JSON-RPC |
-|--------------------------|:---------------------:|:-------------------:|:------------:|
-| Read latency             | **<1ms** (warm cache) | 500ms-2s            | 500ms-2s     |
-| Requires Zotero running  | **No**                | Yes (BBT)           | Yes          |
-| Requires BBT plugin      | **No**                | Yes                 | Yes          |
-| MCP protocol             | Yes                   | Yes                 | No           |
-| Transport                | **stdio + SSE**       | stdio               | JSON-RPC     |
-| BibTeX generation        | **Native**            | Via BBT             | Yes          |
-| Bibliography (APA/IEEE)  | **Native**            | Via BBT             | Yes          |
-| PDF resolver             | **9 concurrent**      | 9 concurrent        | None         |
-| Binary size              | **5.8 MB**            | ~50 MB (venv)       | N/A          |
-| Runtime dependencies     | **None**              | Python 3.10+        | Zotero + BBT |
-
-## Why Rust?
-
-The honest answer: **performance was the problem, and Rust solved it.**
-
-The Python MCP server works. But every query passes through Better BibTeX's
-JSON-RPC interface -- JavaScript executing inside Zotero's Electron process.
-That adds 500ms-2s of latency per tool call. A performance audit showed that
-95% of the time was spent in the BBT bridge, not in the actual database read.
-
-The fix was to read SQLite directly. And once you are doing direct SQLite reads,
-Rust gives you three things for free:
-
-1. **No runtime overhead.** No GC pauses, no interpreter startup, no venv.
-   The binary is 5.8 MB and starts in microseconds.
-2. **Fearless concurrency.** The 9-source PDF resolver fires all sources in
-   parallel via `tokio::join!`.
-3. **Single binary distribution.** Download and run. No dependency hell.
-
-Could we have gotten 80% of the speed improvement by reading SQLite from
-Python? Yes. But the remaining 20% -- startup time, memory footprint,
-concurrent PDF resolution, and distributing a single file instead of a
-virtualenv -- made Rust the right call.
+Write tools are **disabled by default**. To enable them, set both `ZOTERO_API_KEY` and `ZOTERO_MCP_ENABLE_WRITES=true`.
 
 ## Configuration
 
+### Environment variables
+
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ZOTERO_MCP_TRANSPORT` | `stdio` | Transport: `stdio` or `sse` |
+| `ZOTERO_SQLITE_PATH` | `~/Zotero/zotero.sqlite` | Path to your Zotero database |
+| `ZOTERO_STORAGE_PATH` | `~/Zotero/storage` | Path to PDF storage |
+| `ZOTERO_MCP_TRANSPORT` | `stdio` | Transport mode: `stdio` or `sse` |
 | `ZOTERO_MCP_HOST` | `127.0.0.1` | SSE listen address |
 | `ZOTERO_MCP_PORT` | `23120` | SSE listen port |
-| `ZOTERO_API_KEY` | -- | Required for write operations |
-| `ZOTERO_LIBRARY_ID` | -- | Your Zotero library ID (for writes) |
-| `ZOTERO_LIBRARY_TYPE` | `user` | Library type (`user` or `group`) |
-| `ZOTERO_SQLITE_PATH` | `~/Zotero/zotero.sqlite` | Path to Zotero database |
-| `ZOTERO_STORAGE_PATH` | `~/Zotero/storage` | Path to PDF storage |
-| `BBT_MIGRATED_PATH` | `~/Zotero/better-bibtex.migrated` | BBT citekey database |
-| `BBT_URL` | `http://localhost:23119/better-bibtex/json-rpc` | BBT RPC (bibliography fallback) |
+| `ZOTERO_API_KEY` | — | Zotero API key (required for write tools) |
+| `ZOTERO_LIBRARY_ID` | — | Your Zotero library ID (for write tools) |
+| `ZOTERO_MCP_ENABLE_WRITES` | `false` | Explicitly enable write tools |
 
-### SSE mode (for Claude Desktop)
+### TOML config file (optional)
+
+Place a file at `~/.config/zotero-mcp/config.toml` to configure the PDF resolver:
+
+```toml
+[resolver]
+email = "you@university.edu"       # polite-pool access for Unpaywall/Crossref
+timeout_secs = 15
+
+# Enable/disable sources, set priority by order
+[[resolver.sources]]
+name = "arxiv"
+enabled = true
+
+[[resolver.sources]]
+name = "openalex"
+enabled = true
+
+[[resolver.sources]]
+name = "unpaywall"
+enabled = true
+
+[[resolver.sources]]
+name = "ssrn"
+enabled = false                     # disable sources you don't need
+```
+
+Override the config path with `ZOTERO_MCP_CONFIG=/path/to/config.toml`.
+
+### SSE mode
+
+For Claude Desktop or other HTTP-based clients:
 
 ```bash
-# Start as daemon
-ZOTERO_MCP_TRANSPORT=sse ZOTERO_MCP_PORT=23120 zotero-mcp
+ZOTERO_MCP_TRANSPORT=sse zotero-mcp
+```
 
-# Configure Claude Desktop
+Then in Claude Desktop settings:
+
+```json
 {
   "zotero": {
     "type": "sse",
@@ -186,41 +166,10 @@ cargo build --release
 cargo test
 ```
 
-Requires Rust 1.85+ (edition 2024).
+Requires Rust 1.85+ (2024 edition). The workspace contains two crates:
 
-## Architecture
-
-```
-Claude <-stdio/sse-> zotero-mcp
-                         |
-              +----------+----------+
-              |          |          |
-         Read Tools   Write Tools  PDF Resolver
-         (sync SQLite) (reqwest)   (tokio async)
-              |          |          |
-         zotero.sqlite  Zotero    9 sources
-         bbt.migrated   Web API   concurrent
-```
-
-- **Read tools** (9): pure SQLite, sub-millisecond. The performance win.
-- **BibTeX/bibliography** (3): native formatting for APA/IEEE, BBT fallback for exotic styles.
-- **Write tools** (14): Zotero Web API via reqwest.
-- **PDF resolver**: 9 sources queried concurrently via tokio.
-
-## Performance notes
-
-- Read latency: <1ms for single-item lookups on a warm OS page cache.
-  First query after startup may take 5-50ms depending on disk cache state.
-  Full-text search across ~2700 items: ~5-10ms.
-- The speed improvement comes from eliminating the BBT JSON-RPC bottleneck
-  (JavaScript in Electron), not from Rust being faster than Python at SQLite reads.
-- Write operations go through the Zotero Web API at the same speed as the Python server (~200-500ms).
-- Unit tests cover read path, protocol, and formatting. Write tools and network
-  resolvers are tested manually against live Zotero.
-
-## Contributing
-
-Contributions welcome. Please run `cargo test` and `cargo clippy` before submitting.
+- **zotero-mcp** — the MCP server
+- **paper-resolver** — standalone library for academic PDF resolution (usable independently)
 
 ## License
 
