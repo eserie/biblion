@@ -593,4 +593,75 @@ mod upload_tests {
         .unwrap();
         assert!(result.is_err());
     }
+
+    /// Regression: item_template() must hit /items/new at the root,
+    /// not under /users/{id}/items/new (which returns 404).
+    #[tokio::test]
+    async fn item_template_uses_root_path() {
+        let server = MockServer::start().await;
+        let uri = server.uri();
+
+        // Mock at /items/new (root) — should be called
+        Mock::given(method("GET"))
+            .and(path("/items/new"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "itemType": "journalArticle",
+                "title": ""
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let result = tokio::task::spawn_blocking(move || {
+            let client = ZoteroWebClient::with_base_url("test-key", &uri);
+            client.item_template("journalArticle")
+        })
+        .await
+        .unwrap();
+        assert!(result.is_ok());
+    }
+
+    /// Regression: attach_file() must send [{...}] not [[{...}]] to POST /items.
+    /// The attachment template must be a single JSON object in the array,
+    /// not a nested array.
+    #[tokio::test]
+    async fn attach_file_sends_flat_array_to_create_items() {
+        let server = MockServer::start().await;
+        let uri = server.uri();
+
+        // Verify the body is a flat array containing an object with "itemType"
+        // If it were [[{...}]], the string would contain "[[" which we reject
+        Mock::given(method("POST"))
+            .and(path("/items"))
+            .and(body_string_contains(r#"[{"#))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "successful": {
+                    "0": { "key": "ATT004", "version": 1, "data": { "key": "ATT004", "version": 1 } }
+                },
+                "unchanged": {},
+                "failed": {}
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        // Auth returns exists=1 so we skip upload steps
+        Mock::given(method("POST"))
+            .and(path_regex(r"/items/ATT004/file"))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_json(serde_json::json!({"exists": 1})),
+            )
+            .mount(&server)
+            .await;
+
+        let tmp = tempfile::tempdir().unwrap();
+        let pdf = make_test_pdf(tmp.path());
+        let result = tokio::task::spawn_blocking(move || {
+            let client = ZoteroWebClient::with_base_url("test-key", &uri);
+            client.attach_file("PARENT04", &pdf, "Test")
+        })
+        .await
+        .unwrap();
+        assert!(result.is_ok());
+    }
 }

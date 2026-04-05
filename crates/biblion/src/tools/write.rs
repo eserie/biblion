@@ -1378,4 +1378,38 @@ mod tests {
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("ZOTERO_API_KEY"));
     }
+
+    /// Regression: 8-char alphanumeric keys must be accepted as Zotero item keys
+    /// without any SQLite lookup (freshly created items aren't in local DB).
+    #[test]
+    fn resolve_item_key_accepts_8char_alphanumeric() {
+        let ctx = write_ctx_with_base_url("http://unused");
+        // "TQPUXSC2" is NOT in the test DB, but should be accepted by format
+        let result = resolve_item_key(&ctx, "TQPUXSC2");
+        assert_eq!(result, Ok("TQPUXSC2".into()));
+    }
+
+    #[test]
+    fn resolve_item_key_accepts_mixed_case_digits() {
+        let ctx = write_ctx_with_base_url("http://unused");
+        let result = resolve_item_key(&ctx, "Ab3Cd4Ef");
+        assert_eq!(result, Ok("Ab3Cd4Ef".into()));
+    }
+
+    #[test]
+    fn resolve_item_key_short_key_falls_through_to_citekey() {
+        let ctx = write_ctx_with_base_url("http://unused");
+        // 3 chars — not an item key, should try citekey resolution (which fails)
+        let result = resolve_item_key(&ctx, "ABC");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn resolve_item_key_long_string_treated_as_citekey() {
+        let ctx = write_ctx_with_base_url("http://unused");
+        // Long string — clearly a citekey, not an item key
+        let result = resolve_item_key(&ctx, "jiaAnalysisSurveyDevelopment2011");
+        // Fails because no BBT DB in test context
+        assert!(result.is_err());
+    }
 }
