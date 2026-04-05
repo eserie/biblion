@@ -96,7 +96,7 @@ pub fn test_zotero_db() -> ZoteroDb {
             storageHash TEXT, lastProcessedModificationTime INT
         );
         INSERT INTO itemAttachments VALUES (3, 1, 1, 'application/pdf', 'storage:DeMillo1978.pdf',
-                                             NULL, 0, NULL, NULL, NULL);
+                                             NULL, 0, NULL, 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4', NULL);
 
         CREATE TABLE itemNotes (itemID INT PRIMARY KEY, parentItemID INT, note TEXT, title TEXT);
         INSERT INTO itemNotes VALUES (4, 1, '<p>Great foundational paper.</p>', '');

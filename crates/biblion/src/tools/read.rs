@@ -205,14 +205,12 @@ pub fn zotero_get_pdf_path(args: &Value, ctx: &ServerContext) -> ToolCallResult 
         Err(e) => return ToolCallResult::error(e.to_string()),
     };
 
-    let pdf_paths: Vec<String> = attachments
+    let pdf_entries: Vec<String> = attachments
         .iter()
         .filter(|a| a.content_type == "application/pdf")
         .filter_map(|a| {
             a.path.as_ref().map(|p| {
-                if let Some(filename) = p.strip_prefix("storage:") {
-                    // Resolve relative storage path
-                    // Zotero stores PDFs as storage/{parent_item_key}/{filename}
+                let resolved = if let Some(filename) = p.strip_prefix("storage:") {
                     let full_path: PathBuf = [
                         ctx.config.zotero_storage_path.to_str().unwrap_or(""),
                         &a.item_key,
@@ -223,15 +221,19 @@ pub fn zotero_get_pdf_path(args: &Value, ctx: &ServerContext) -> ToolCallResult 
                     full_path.to_string_lossy().to_string()
                 } else {
                     p.clone()
+                };
+                match &a.storage_hash {
+                    Some(hash) => format!("{resolved}\n  md5:{hash}"),
+                    None => resolved,
                 }
             })
         })
         .collect();
 
-    if pdf_paths.is_empty() {
+    if pdf_entries.is_empty() {
         ToolCallResult::text(format!("No PDF attachments for {citekey}"))
     } else {
-        ToolCallResult::text(pdf_paths.join("\n"))
+        ToolCallResult::text(pdf_entries.join("\n"))
     }
 }
 
@@ -270,7 +272,15 @@ pub fn zotero_list_attachments(args: &Value, ctx: &ServerContext) -> ToolCallRes
             for att in &attachments {
                 let title = att.title.as_deref().unwrap_or("(untitled)");
                 let path = att.path.as_deref().unwrap_or("(no path)");
-                output.push_str(&format!("- [{title}] {}\n  {path}\n", att.content_type));
+                let hash = att
+                    .storage_hash
+                    .as_deref()
+                    .map(|h| format!("\n  md5:{h}"))
+                    .unwrap_or_default();
+                output.push_str(&format!(
+                    "- [{title}] {}\n  {path}{hash}\n",
+                    att.content_type
+                ));
             }
             ToolCallResult::text(output)
         }

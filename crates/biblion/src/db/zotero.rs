@@ -76,6 +76,11 @@ pub struct Attachment {
     pub content_type: String,
     pub path: Option<String>,
     pub title: Option<String>,
+    /// MD5 content hash computed by Zotero on import.
+    /// Exposes a content-identity primitive for external tools
+    /// (deduplication, verification, linking) without Biblion
+    /// needing to know about consumers.
+    pub storage_hash: Option<String>,
 }
 
 /// Read-only connection to Zotero's main SQLite database.
@@ -329,14 +334,19 @@ impl ZoteroDb {
     // Attachments
     // -----------------------------------------------------------------------
 
-    /// Get PDF attachments for an item.
+    /// Get attachments for an item, including content hash.
+    ///
+    /// The `storage_hash` field is an MD5 hash computed by Zotero on import.
+    /// External tools can use it for content-identity verification and
+    /// deduplication without Biblion needing to know about consumers.
     pub fn item_attachments(&self, item_id: i64) -> Result<Vec<Attachment>> {
         let mut stmt = self.conn.prepare_cached(
             "SELECT i.key, ia.contentType, ia.path,
                     (SELECT iv.value FROM itemData id2
                      JOIN itemDataValues iv ON id2.valueID = iv.valueID
                      JOIN fields f ON id2.fieldID = f.fieldID
-                     WHERE id2.itemID = ia.itemID AND f.fieldName = 'title') as title
+                     WHERE id2.itemID = ia.itemID AND f.fieldName = 'title') as title,
+                    ia.storageHash
              FROM itemAttachments ia
              JOIN items i ON ia.itemID = i.itemID
              WHERE ia.parentItemID = ?1",
@@ -347,6 +357,7 @@ impl ZoteroDb {
                 content_type: row.get::<_, Option<String>>(1)?.unwrap_or_default(),
                 path: row.get(2)?,
                 title: row.get(3)?,
+                storage_hash: row.get(4)?,
             })
         })?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
@@ -478,7 +489,7 @@ mod tests {
                 storageHash TEXT, lastProcessedModificationTime INT
             );
             INSERT INTO itemAttachments VALUES (3, 1, 1, 'application/pdf', 'storage:DeMillo1978.pdf',
-                                                 NULL, 0, NULL, NULL, NULL);
+                                                 NULL, 0, NULL, 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4', NULL);
 
             -- Notes
             CREATE TABLE itemNotes (itemID INT PRIMARY KEY, parentItemID INT, note TEXT, title TEXT);
@@ -634,6 +645,10 @@ mod tests {
         assert_eq!(attachments.len(), 1);
         assert_eq!(attachments[0].content_type, "application/pdf");
         assert_eq!(attachments[0].path, Some("storage:DeMillo1978.pdf".into()));
+        assert_eq!(
+            attachments[0].storage_hash,
+            Some("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4".into())
+        );
     }
 
     #[test]

@@ -52,6 +52,24 @@ Claude → stdio/SSE → JSON-RPC parse → dispatch
 5. Paper tools use paper-resolver with tokio for concurrent HTTP
 6. Response is serialized and sent back via the same transport
 
+## Content-identity primitives
+
+Biblion exposes the raw data needed for content-addressing without
+implementing content-addressing itself. External tools use these
+primitives for deduplication, verification, and cross-system linking.
+
+| Primitive | Source | Tool |
+|-----------|--------|------|
+| `storage_hash` (MD5) | `itemAttachments.storageHash` | `zotero_get_pdf_path`, `zotero_list_attachments` |
+| `pdf_path` | `itemAttachments.path` (resolved) | `zotero_get_pdf_path` |
+| `citekey` | `citationKey` field in EAV | all item tools |
+| `doi` | `DOI` field in EAV | `zotero_get_item`, `zotero_search` |
+| `item_key` | `items.key` (8-char) | all tools |
+
+Biblion does NOT compute hashes, deduplicate files, or manage
+cross-system identity. It reads what Zotero stored and exposes it
+through a universal protocol (MCP) that any consumer can use.
+
 ## How to add a new tool
 
 1. **Add handler** in `tools/read.rs` (or `write.rs` / `paper.rs`):

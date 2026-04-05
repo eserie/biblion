@@ -49,7 +49,7 @@ just release X.Y.Z # Tag + push (triggers CI build + publish)
 - `#![allow(dead_code)]` at crate root for API completeness (fields used in tests or reserved)
 
 ### Testing
-- 125 tests (18 paper-resolver + 107 biblion)
+- 178+ tests (56 paper-resolver + 122 biblion)
 - In-memory SQLite fixtures in `crates/biblion/src/test_helpers.rs`
 - All DB tests use `ZoteroDb::from_connection()` with realistic EAV schema
 - Network-dependent code (PDF resolver sources, Zotero Web API) not mocked yet (see issues #4, #5)
@@ -57,6 +57,7 @@ just release X.Y.Z # Tag + push (triggers CI build + publish)
 ### Architecture (see docs/ARCHITECTURE.md)
 - **Read tools** (9): pure SQLite, sub-millisecond. The performance win.
 - **Write tools** (11): Zotero Web API via reqwest. Gated behind `ZOTERO_MCP_ENABLE_WRITES`.
+- **Content-identity**: Biblion exposes `storage_hash` (MD5), `pdf_path`, `citekey`, `doi` as primitives. It does NOT compute hashes or deduplicate — it reads what Zotero stored and exposes it for external tools.
 - **Paper tools** (2): paper-resolver library, tokio async.
 - **Export tools** (3): native BibTeX/BibLaTeX + APA/IEEE bibliography.
 - **Transports**: stdio (default, for Claude Code) + SSE (for Claude Desktop).
