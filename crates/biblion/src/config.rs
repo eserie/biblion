@@ -64,6 +64,8 @@ pub struct Config {
     /// Paper resolver configuration (sources, timeouts, etc.).
     /// Loaded from TOML config file if present, otherwise defaults.
     pub resolver: paper_resolver::ResolverConfig,
+    /// Override Zotero API base URL (for testing). None = use default.
+    pub zotero_api_base_url: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -111,6 +113,9 @@ impl Config {
                 .map(|v| v == "true" || v == "1")
                 .unwrap_or(false),
             resolver: load_resolver_config(),
+            zotero_api_base_url: std::env::var("ZOTERO_API_BASE_URL")
+                .ok()
+                .filter(|s| !s.is_empty()),
         }
     }
 
@@ -231,6 +236,7 @@ mod tests {
             log_level: LogLevel::Info,
             writes_enabled: false,
             resolver: paper_resolver::ResolverConfig::default(),
+            zotero_api_base_url: None,
         };
         assert!(!config.has_write_access());
         assert!(
@@ -255,6 +261,7 @@ mod tests {
             log_level: LogLevel::Quiet,
             writes_enabled: false,
             resolver: paper_resolver::ResolverConfig::default(),
+            zotero_api_base_url: None,
         };
         assert!(config.has_write_access());
     }

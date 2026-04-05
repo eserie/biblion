@@ -178,6 +178,7 @@ mod tests {
                 log_level: crate::config::LogLevel::Quiet,
                 writes_enabled: false,
                 resolver: paper_resolver::ResolverConfig::default(),
+                zotero_api_base_url: None,
             },
         }
     }
