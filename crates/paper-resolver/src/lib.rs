@@ -154,7 +154,7 @@ const BLOCKED_DOMAINS: &[&str] = &[
     "silverchair.com",
 ];
 
-fn is_downloadable_with_config(url: &str, config: &ResolverConfig) -> bool {
+fn _is_downloadable_with_config(url: &str, config: &ResolverConfig) -> bool {
     if BLOCKED_DOMAINS.iter().any(|d| url.contains(d)) {
         return false;
     }
@@ -236,10 +236,9 @@ pub async fn resolve_pdf_async(
         .ok()?;
 
     // Fire enabled sources concurrently via join_all pattern
-    // Each future returns Option<(priority, ResolvedPdf)>
-    let mut futures: Vec<
-        std::pin::Pin<Box<dyn std::future::Future<Output = Option<(u8, ResolvedPdf)>> + Send + '_>>,
-    > = Vec::new();
+    type PdfFuture<'a> =
+        std::pin::Pin<Box<dyn std::future::Future<Output = Option<(u8, ResolvedPdf)>> + Send + 'a>>;
+    let mut futures: Vec<PdfFuture<'_>> = Vec::new();
 
     for source in &config.sources {
         if !source.enabled {
