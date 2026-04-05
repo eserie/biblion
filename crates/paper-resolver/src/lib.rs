@@ -20,12 +20,11 @@
 //!
 //! # Usage
 //!
-//! ```ignore
+//! ```no_run
 //! // Sync (creates its own tokio runtime):
-//! let result = paper_resolver::resolve_pdf(Some("10.1109/TSE.2010.62"), None, Some("mutation testing"));
-//!
-//! // Async (caller owns the runtime):
-//! let result = paper_resolver::resolve_pdf_async(Some("10.1109/TSE.2010.62"), None, Some("mutation")).await;
+//! let result = paper_resolver::resolve_pdf(
+//!     Some("10.1109/TSE.2010.62"), None, Some("mutation testing"),
+//! );
 //! ```
 
 use regex::Regex;
@@ -60,6 +59,7 @@ fn pdf_runtime() -> &'static tokio::runtime::Runtime {
 
 /// Result of PDF URL resolution.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct ResolvedPdf {
     pub url: String,
     pub source: String,
@@ -225,7 +225,7 @@ pub fn resolve_pdf_with_config(
     }
 
     // 2-9. Concurrent HTTP queries via tokio (shared runtime)
-    pdf_runtime().block_on(resolve_pdf_async(doi, title, config))
+    pdf_runtime().block_on(resolve_pdf_async(doi, url, title, config))
 }
 
 /// Async version with configuration — caller owns the tokio runtime.
@@ -234,9 +234,22 @@ pub fn resolve_pdf_with_config(
 /// Source priority is determined by position in `config.sources` (first = highest).
 pub async fn resolve_pdf_async(
     doi: Option<&str>,
+    url: Option<&str>,
     title: Option<&str>,
     config: &ResolverConfig,
 ) -> Option<ResolvedPdf> {
+    // arXiv from URL (same as sync path)
+    if config.is_enabled("arxiv")
+        && let Some(url) = url
+        && let Some(id) = url_to_arxiv_id(url)
+    {
+        return Some(ResolvedPdf {
+            url: format!("https://arxiv.org/pdf/{id}.pdf"),
+            source: "arxiv".into(),
+            downloadable: true,
+        });
+    }
+
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(config.timeout_secs))
         .redirect(reqwest::redirect::Policy::limited(10))
