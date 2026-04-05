@@ -1,0 +1,86 @@
+--- crates/paper-resolver/src/lib.rs
++++ replace try_openalex -> Option<ResolvedPdf> with Some(Default::default())
+@@ -302,82 +302,17 @@
+ // OpenAlex
+ // ---------------------------------------------------------------------------
+ 
+ async fn try_openalex(
+     client: &reqwest::Client,
+     doi: Option<&str>,
+     title: Option<&str>,
+ ) -> Option<ResolvedPdf> {
+-    let resp = if let Some(doi) = doi {
+-        client
+-            .get(format!("https://api.openalex.org/works/doi:{doi}"))
+-            .query(&[("select", "open_access,locations,best_oa_location")])
+-            .send()
+-            .await
+-            .ok()?
+-    } else {
+-        let title = title?;
+-        client
+-            .get("https://api.openalex.org/works")
+-            .query(&[
+-                ("search", title),
+-                ("per_page", "1"),
+-                ("select", "open_access,locations,best_oa_location"),
+-            ])
+-            .send()
+-            .await
+-            .ok()?
+-    };
+-
+-    if !resp.status().is_success() {
+-        return None;
+-    }
+-    let data: serde_json::Value = resp.json().await.ok()?;
+-
+-    let work = if let Some(results) = data.get("results").and_then(|v| v.as_array()) {
+-        results.first()?
+-    } else {
+-        &data
+-    };
+-
+-    // Try best_oa_location.pdf_url → open_access.oa_url → locations[].pdf_url
+-    if let Some(url) = work
+-        .pointer("/best_oa_location/pdf_url")
+-        .and_then(|v| v.as_str())
+-    {
+-        return Some(ResolvedPdf {
+-            url: url.into(),
+-            source: "openalex".into(),
+-            downloadable: is_downloadable(url),
+-        });
+-    }
+-    if let Some(url) = work.pointer("/open_access/oa_url").and_then(|v| v.as_str())
+-        && url.ends_with(".pdf")
+-    {
+-        return Some(ResolvedPdf {
+-            url: url.into(),
+-            source: "openalex".into(),
+-            downloadable: is_downloadable(url),
+-        });
+-    }
+-    for loc in work
+-        .get("locations")
+-        .and_then(|v| v.as_array())
+-        .unwrap_or(&vec![])
+-    {
+-        if let Some(url) = loc.get("pdf_url").and_then(|v| v.as_str()) {
+-            return Some(ResolvedPdf {
+-                url: url.into(),
+-                source: "openalex".into(),
+-                downloadable: is_downloadable(url),
+-            });
+-        }
+-    }
+-    None
++    Some(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // ---------------------------------------------------------------------------
+ // CORE
+ // ---------------------------------------------------------------------------
+ 
+ async fn try_core(
+     client: &reqwest::Client,

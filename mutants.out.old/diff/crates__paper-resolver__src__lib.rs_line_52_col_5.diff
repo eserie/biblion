@@ -1,0 +1,27 @@
+--- crates/paper-resolver/src/lib.rs
++++ replace pdf_runtime -> &'static tokio::runtime::Runtime with Box::leak(Box::new(Default::default()))
+@@ -44,23 +44,17 @@
+ ///
+ /// Uses `new_multi_thread` (not `new_current_thread`) because in SSE mode,
+ /// multiple concurrent requests may call `resolve_pdf()` from different
+ /// `spawn_blocking` threads. A current-thread runtime would deadlock or panic
+ /// when a second `block_on()` is called on the same runtime.
+ static PDF_RUNTIME: std::sync::OnceLock<tokio::runtime::Runtime> = std::sync::OnceLock::new();
+ 
+ fn pdf_runtime() -> &'static tokio::runtime::Runtime {
+-    PDF_RUNTIME.get_or_init(|| {
+-        tokio::runtime::Builder::new_multi_thread()
+-            .worker_threads(2)
+-            .enable_all()
+-            .build()
+-            .expect("failed to build PDF tokio runtime")
+-    })
++    Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Result of PDF URL resolution.
+ #[derive(Debug, Clone)]
+ pub struct ResolvedPdf {
+     pub url: String,
+     pub source: String,
+     pub downloadable: bool,

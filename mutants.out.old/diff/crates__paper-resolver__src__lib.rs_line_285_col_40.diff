@@ -1,0 +1,21 @@
+--- crates/paper-resolver/src/lib.rs
++++ delete ! in resolve_pdf_async
+@@ -277,17 +277,17 @@
+     }
+ 
+     let results = futures::future::join_all(futures).await;
+ 
+     // Collect successful results
+     let mut candidates: Vec<(u8, ResolvedPdf)> = results.into_iter().flatten().collect();
+ 
+     // Prefer downloadable, then highest priority (lowest number)
+-    candidates.sort_by_key(|(pri, r)| (!r.downloadable, *pri));
++    candidates.sort_by_key(|(pri, r)| ( /* ~ changed by cargo-mutants ~ */r.downloadable, *pri));
+     candidates.into_iter().next().map(|(_, r)| r)
+ }
+ 
+ // ---------------------------------------------------------------------------
+ // arXiv helpers
+ // ---------------------------------------------------------------------------
+ 
+ fn doi_to_arxiv_id(doi: &str) -> Option<String> {

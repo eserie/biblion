@@ -1,0 +1,2242 @@
+[
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace pdf_runtime -> &'static tokio::runtime::Runtime with Box::leak(Box::new(Default::default()))\n@@ -44,23 +44,17 @@\n ///\n /// Uses `new_multi_thread` (not `new_current_thread`) because in SSE mode,\n /// multiple concurrent requests may call `resolve_pdf()` from different\n /// `spawn_blocking` threads. A current-thread runtime would deadlock or panic\n /// when a second `block_on()` is called on the same runtime.\n static PDF_RUNTIME: std::sync::OnceLock<tokio::runtime::Runtime> = std::sync::OnceLock::new();\n \n fn pdf_runtime() -> &'static tokio::runtime::Runtime {\n-    PDF_RUNTIME.get_or_init(|| {\n-        tokio::runtime::Builder::new_multi_thread()\n-            .worker_threads(2)\n-            .enable_all()\n-            .build()\n-            .expect(\"failed to build PDF tokio runtime\")\n-    })\n+    Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Result of PDF URL resolution.\n #[derive(Debug, Clone)]\n pub struct ResolvedPdf {\n     pub url: String,\n     pub source: String,\n     pub downloadable: bool,\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "pdf_runtime",
+      "return_type": "-> &'static tokio::runtime::Runtime",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 59
+        },
+        "start": {
+          "column": 1,
+          "line": 51
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:52:5: replace pdf_runtime -> &'static tokio::runtime::Runtime with Box::leak(Box::new(Default::default()))",
+    "package": "paper-resolver",
+    "replacement": "Box::leak(Box::new(Default::default()))",
+    "span": {
+      "end": {
+        "column": 7,
+        "line": 58
+      },
+      "start": {
+        "column": 5,
+        "line": 52
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace ResolverConfig::is_enabled -> bool with true\n@@ -123,17 +123,17 @@\n             extra_blocked_domains: vec![],\n         }\n     }\n }\n \n impl ResolverConfig {\n     /// Check if a source is enabled by name.\n     pub fn is_enabled(&self, name: &str) -> bool {\n-        self.sources.iter().any(|s| s.name == name && s.enabled)\n+        true /* ~ changed by cargo-mutants ~ */\n     }\n \n     /// Get the priority (position index) for a source.\n     pub fn priority(&self, name: &str) -> u8 {\n         self.sources\n             .iter()\n             .position(|s| s.name == name)\n             .map(|p| (p + 1) as u8)\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "ResolverConfig::is_enabled",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 132
+        },
+        "start": {
+          "column": 5,
+          "line": 129
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:131:9: replace ResolverConfig::is_enabled -> bool with true",
+    "package": "paper-resolver",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 65,
+        "line": 131
+      },
+      "start": {
+        "column": 9,
+        "line": 131
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace ResolverConfig::is_enabled -> bool with false\n@@ -123,17 +123,17 @@\n             extra_blocked_domains: vec![],\n         }\n     }\n }\n \n impl ResolverConfig {\n     /// Check if a source is enabled by name.\n     pub fn is_enabled(&self, name: &str) -> bool {\n-        self.sources.iter().any(|s| s.name == name && s.enabled)\n+        false /* ~ changed by cargo-mutants ~ */\n     }\n \n     /// Get the priority (position index) for a source.\n     pub fn priority(&self, name: &str) -> u8 {\n         self.sources\n             .iter()\n             .position(|s| s.name == name)\n             .map(|p| (p + 1) as u8)\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "ResolverConfig::is_enabled",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 132
+        },
+        "start": {
+          "column": 5,
+          "line": 129
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:131:9: replace ResolverConfig::is_enabled -> bool with false",
+    "package": "paper-resolver",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 65,
+        "line": 131
+      },
+      "start": {
+        "column": 9,
+        "line": 131
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace && with || in ResolverConfig::is_enabled\n@@ -123,17 +123,17 @@\n             extra_blocked_domains: vec![],\n         }\n     }\n }\n \n impl ResolverConfig {\n     /// Check if a source is enabled by name.\n     pub fn is_enabled(&self, name: &str) -> bool {\n-        self.sources.iter().any(|s| s.name == name && s.enabled)\n+        self.sources.iter().any(|s| s.name == name || /* ~ changed by cargo-mutants ~ */ s.enabled)\n     }\n \n     /// Get the priority (position index) for a source.\n     pub fn priority(&self, name: &str) -> u8 {\n         self.sources\n             .iter()\n             .position(|s| s.name == name)\n             .map(|p| (p + 1) as u8)\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "ResolverConfig::is_enabled",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 132
+        },
+        "start": {
+          "column": 5,
+          "line": 129
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:131:52: replace && with || in ResolverConfig::is_enabled",
+    "package": "paper-resolver",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 54,
+        "line": 131
+      },
+      "start": {
+        "column": 52,
+        "line": 131
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace == with != in ResolverConfig::is_enabled\n@@ -123,17 +123,17 @@\n             extra_blocked_domains: vec![],\n         }\n     }\n }\n \n impl ResolverConfig {\n     /// Check if a source is enabled by name.\n     pub fn is_enabled(&self, name: &str) -> bool {\n-        self.sources.iter().any(|s| s.name == name && s.enabled)\n+        self.sources.iter().any(|s| s.name != /* ~ changed by cargo-mutants ~ */ name && s.enabled)\n     }\n \n     /// Get the priority (position index) for a source.\n     pub fn priority(&self, name: &str) -> u8 {\n         self.sources\n             .iter()\n             .position(|s| s.name == name)\n             .map(|p| (p + 1) as u8)\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "ResolverConfig::is_enabled",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 132
+        },
+        "start": {
+          "column": 5,
+          "line": 129
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:131:44: replace == with != in ResolverConfig::is_enabled",
+    "package": "paper-resolver",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 46,
+        "line": 131
+      },
+      "start": {
+        "column": 44,
+        "line": 131
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace ResolverConfig::priority -> u8 with 0\n@@ -128,21 +128,17 @@\n impl ResolverConfig {\n     /// Check if a source is enabled by name.\n     pub fn is_enabled(&self, name: &str) -> bool {\n         self.sources.iter().any(|s| s.name == name && s.enabled)\n     }\n \n     /// Get the priority (position index) for a source.\n     pub fn priority(&self, name: &str) -> u8 {\n-        self.sources\n-            .iter()\n-            .position(|s| s.name == name)\n-            .map(|p| (p + 1) as u8)\n-            .unwrap_or(99)\n+        0 /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// Default domains known to block programmatic downloads.\n const BLOCKED_DOMAINS: &[&str] = &[\n     \"academic.oup.com\",\n     \"wiley.com\",\n     \"www.sciencedirect.com\",\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "ResolverConfig::priority",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 141
+        },
+        "start": {
+          "column": 5,
+          "line": 134
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:136:9: replace ResolverConfig::priority -> u8 with 0",
+    "package": "paper-resolver",
+    "replacement": "0",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 140
+      },
+      "start": {
+        "column": 9,
+        "line": 136
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace ResolverConfig::priority -> u8 with 1\n@@ -128,21 +128,17 @@\n impl ResolverConfig {\n     /// Check if a source is enabled by name.\n     pub fn is_enabled(&self, name: &str) -> bool {\n         self.sources.iter().any(|s| s.name == name && s.enabled)\n     }\n \n     /// Get the priority (position index) for a source.\n     pub fn priority(&self, name: &str) -> u8 {\n-        self.sources\n-            .iter()\n-            .position(|s| s.name == name)\n-            .map(|p| (p + 1) as u8)\n-            .unwrap_or(99)\n+        1 /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// Default domains known to block programmatic downloads.\n const BLOCKED_DOMAINS: &[&str] = &[\n     \"academic.oup.com\",\n     \"wiley.com\",\n     \"www.sciencedirect.com\",\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "ResolverConfig::priority",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 141
+        },
+        "start": {
+          "column": 5,
+          "line": 134
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:136:9: replace ResolverConfig::priority -> u8 with 1",
+    "package": "paper-resolver",
+    "replacement": "1",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 140
+      },
+      "start": {
+        "column": 9,
+        "line": 136
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace == with != in ResolverConfig::priority\n@@ -130,17 +130,17 @@\n     pub fn is_enabled(&self, name: &str) -> bool {\n         self.sources.iter().any(|s| s.name == name && s.enabled)\n     }\n \n     /// Get the priority (position index) for a source.\n     pub fn priority(&self, name: &str) -> u8 {\n         self.sources\n             .iter()\n-            .position(|s| s.name == name)\n+            .position(|s| s.name != /* ~ changed by cargo-mutants ~ */ name)\n             .map(|p| (p + 1) as u8)\n             .unwrap_or(99)\n     }\n }\n \n /// Default domains known to block programmatic downloads.\n const BLOCKED_DOMAINS: &[&str] = &[\n     \"academic.oup.com\",\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "ResolverConfig::priority",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 141
+        },
+        "start": {
+          "column": 5,
+          "line": 134
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:138:34: replace == with != in ResolverConfig::priority",
+    "package": "paper-resolver",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 36,
+        "line": 138
+      },
+      "start": {
+        "column": 34,
+        "line": 138
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace + with - in ResolverConfig::priority\n@@ -131,17 +131,17 @@\n         self.sources.iter().any(|s| s.name == name && s.enabled)\n     }\n \n     /// Get the priority (position index) for a source.\n     pub fn priority(&self, name: &str) -> u8 {\n         self.sources\n             .iter()\n             .position(|s| s.name == name)\n-            .map(|p| (p + 1) as u8)\n+            .map(|p| (p - /* ~ changed by cargo-mutants ~ */ 1) as u8)\n             .unwrap_or(99)\n     }\n }\n \n /// Default domains known to block programmatic downloads.\n const BLOCKED_DOMAINS: &[&str] = &[\n     \"academic.oup.com\",\n     \"wiley.com\",\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "ResolverConfig::priority",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 141
+        },
+        "start": {
+          "column": 5,
+          "line": 134
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:139:25: replace + with - in ResolverConfig::priority",
+    "package": "paper-resolver",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 26,
+        "line": 139
+      },
+      "start": {
+        "column": 25,
+        "line": 139
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace + with * in ResolverConfig::priority\n@@ -131,17 +131,17 @@\n         self.sources.iter().any(|s| s.name == name && s.enabled)\n     }\n \n     /// Get the priority (position index) for a source.\n     pub fn priority(&self, name: &str) -> u8 {\n         self.sources\n             .iter()\n             .position(|s| s.name == name)\n-            .map(|p| (p + 1) as u8)\n+            .map(|p| (p * /* ~ changed by cargo-mutants ~ */ 1) as u8)\n             .unwrap_or(99)\n     }\n }\n \n /// Default domains known to block programmatic downloads.\n const BLOCKED_DOMAINS: &[&str] = &[\n     \"academic.oup.com\",\n     \"wiley.com\",\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "ResolverConfig::priority",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 141
+        },
+        "start": {
+          "column": 5,
+          "line": 134
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:139:25: replace + with * in ResolverConfig::priority",
+    "package": "paper-resolver",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 26,
+        "line": 139
+      },
+      "start": {
+        "column": 25,
+        "line": 139
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace _is_downloadable_with_config -> bool with true\n@@ -150,27 +150,17 @@\n     \"www.nature.com\",\n     \"www.tandfonline.com\",\n     \"ieeexplore.ieee.org\",\n     \"journals.sagepub.com\",\n     \"silverchair.com\",\n ];\n \n fn _is_downloadable_with_config(url: &str, config: &ResolverConfig) -> bool {\n-    if BLOCKED_DOMAINS.iter().any(|d| url.contains(d)) {\n-        return false;\n-    }\n-    if config\n-        .extra_blocked_domains\n-        .iter()\n-        .any(|d| url.contains(d.as_str()))\n-    {\n-        return false;\n-    }\n-    true\n+    true /* ~ changed by cargo-mutants ~ */\n }\n \n fn is_downloadable(url: &str) -> bool {\n     !BLOCKED_DOMAINS.iter().any(|d| url.contains(d))\n }\n \n /// Resolve a PDF URL using all available sources (default config).\n ///\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "_is_downloadable_with_config",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 169
+        },
+        "start": {
+          "column": 1,
+          "line": 157
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:158:5: replace _is_downloadable_with_config -> bool with true",
+    "package": "paper-resolver",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 168
+      },
+      "start": {
+        "column": 5,
+        "line": 158
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace _is_downloadable_with_config -> bool with false\n@@ -150,27 +150,17 @@\n     \"www.nature.com\",\n     \"www.tandfonline.com\",\n     \"ieeexplore.ieee.org\",\n     \"journals.sagepub.com\",\n     \"silverchair.com\",\n ];\n \n fn _is_downloadable_with_config(url: &str, config: &ResolverConfig) -> bool {\n-    if BLOCKED_DOMAINS.iter().any(|d| url.contains(d)) {\n-        return false;\n-    }\n-    if config\n-        .extra_blocked_domains\n-        .iter()\n-        .any(|d| url.contains(d.as_str()))\n-    {\n-        return false;\n-    }\n-    true\n+    false /* ~ changed by cargo-mutants ~ */\n }\n \n fn is_downloadable(url: &str) -> bool {\n     !BLOCKED_DOMAINS.iter().any(|d| url.contains(d))\n }\n \n /// Resolve a PDF URL using all available sources (default config).\n ///\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "_is_downloadable_with_config",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 169
+        },
+        "start": {
+          "column": 1,
+          "line": 157
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:158:5: replace _is_downloadable_with_config -> bool with false",
+    "package": "paper-resolver",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 168
+      },
+      "start": {
+        "column": 5,
+        "line": 158
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace is_downloadable -> bool with true\n@@ -164,17 +164,17 @@\n         .any(|d| url.contains(d.as_str()))\n     {\n         return false;\n     }\n     true\n }\n \n fn is_downloadable(url: &str) -> bool {\n-    !BLOCKED_DOMAINS.iter().any(|d| url.contains(d))\n+    true /* ~ changed by cargo-mutants ~ */\n }\n \n /// Resolve a PDF URL using all available sources (default config).\n ///\n /// Convenience wrapper that uses [`ResolverConfig::default()`].\n /// For custom configuration, use [`resolve_pdf_with_config`].\n pub fn resolve_pdf(\n     doi: Option<&str>,\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "is_downloadable",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 171
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:172:5: replace is_downloadable -> bool with true",
+    "package": "paper-resolver",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 53,
+        "line": 172
+      },
+      "start": {
+        "column": 5,
+        "line": 172
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace is_downloadable -> bool with false\n@@ -164,17 +164,17 @@\n         .any(|d| url.contains(d.as_str()))\n     {\n         return false;\n     }\n     true\n }\n \n fn is_downloadable(url: &str) -> bool {\n-    !BLOCKED_DOMAINS.iter().any(|d| url.contains(d))\n+    false /* ~ changed by cargo-mutants ~ */\n }\n \n /// Resolve a PDF URL using all available sources (default config).\n ///\n /// Convenience wrapper that uses [`ResolverConfig::default()`].\n /// For custom configuration, use [`resolve_pdf_with_config`].\n pub fn resolve_pdf(\n     doi: Option<&str>,\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "is_downloadable",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 171
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:172:5: replace is_downloadable -> bool with false",
+    "package": "paper-resolver",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 53,
+        "line": 172
+      },
+      "start": {
+        "column": 5,
+        "line": 172
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete ! in is_downloadable\n@@ -164,17 +164,17 @@\n         .any(|d| url.contains(d.as_str()))\n     {\n         return false;\n     }\n     true\n }\n \n fn is_downloadable(url: &str) -> bool {\n-    !BLOCKED_DOMAINS.iter().any(|d| url.contains(d))\n+     /* ~ changed by cargo-mutants ~ */BLOCKED_DOMAINS.iter().any(|d| url.contains(d))\n }\n \n /// Resolve a PDF URL using all available sources (default config).\n ///\n /// Convenience wrapper that uses [`ResolverConfig::default()`].\n /// For custom configuration, use [`resolve_pdf_with_config`].\n pub fn resolve_pdf(\n     doi: Option<&str>,\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "is_downloadable",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 173
+        },
+        "start": {
+          "column": 1,
+          "line": 171
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:172:5: delete ! in is_downloadable",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 172
+      },
+      "start": {
+        "column": 5,
+        "line": 172
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace resolve_pdf -> Option<ResolvedPdf> with None\n@@ -176,17 +176,17 @@\n ///\n /// Convenience wrapper that uses [`ResolverConfig::default()`].\n /// For custom configuration, use [`resolve_pdf_with_config`].\n pub fn resolve_pdf(\n     doi: Option<&str>,\n     url: Option<&str>,\n     title: Option<&str>,\n ) -> Option<ResolvedPdf> {\n-    resolve_pdf_with_config(doi, url, title, &ResolverConfig::default())\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n /// Resolve a PDF URL with custom configuration.\n ///\n /// Sync version — creates a tokio runtime internally.\n /// For async callers, use [`resolve_pdf_async`].\n pub fn resolve_pdf_with_config(\n     doi: Option<&str>,\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 185
+        },
+        "start": {
+          "column": 1,
+          "line": 175
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:184:5: replace resolve_pdf -> Option<ResolvedPdf> with None",
+    "package": "paper-resolver",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 73,
+        "line": 184
+      },
+      "start": {
+        "column": 5,
+        "line": 184
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace resolve_pdf -> Option<ResolvedPdf> with Some(Default::default())\n@@ -176,17 +176,17 @@\n ///\n /// Convenience wrapper that uses [`ResolverConfig::default()`].\n /// For custom configuration, use [`resolve_pdf_with_config`].\n pub fn resolve_pdf(\n     doi: Option<&str>,\n     url: Option<&str>,\n     title: Option<&str>,\n ) -> Option<ResolvedPdf> {\n-    resolve_pdf_with_config(doi, url, title, &ResolverConfig::default())\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Resolve a PDF URL with custom configuration.\n ///\n /// Sync version — creates a tokio runtime internally.\n /// For async callers, use [`resolve_pdf_async`].\n pub fn resolve_pdf_with_config(\n     doi: Option<&str>,\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 185
+        },
+        "start": {
+          "column": 1,
+          "line": 175
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:184:5: replace resolve_pdf -> Option<ResolvedPdf> with Some(Default::default())",
+    "package": "paper-resolver",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 73,
+        "line": 184
+      },
+      "start": {
+        "column": 5,
+        "line": 184
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace resolve_pdf_with_config -> Option<ResolvedPdf> with None\n@@ -190,39 +190,17 @@\n /// For async callers, use [`resolve_pdf_async`].\n pub fn resolve_pdf_with_config(\n     doi: Option<&str>,\n     url: Option<&str>,\n     title: Option<&str>,\n     config: &ResolverConfig,\n ) -> Option<ResolvedPdf> {\n     // 1. arXiv — instant, no network\n-    if config.is_enabled(\"arxiv\") {\n-        if let Some(doi) = doi\n-            && let Some(id) = doi_to_arxiv_id(doi)\n-        {\n-            return Some(ResolvedPdf {\n-                url: format!(\"https://arxiv.org/pdf/{id}.pdf\"),\n-                source: \"arxiv\".into(),\n-                downloadable: true,\n-            });\n-        }\n-        if let Some(url) = url\n-            && let Some(id) = url_to_arxiv_id(url)\n-        {\n-            return Some(ResolvedPdf {\n-                url: format!(\"https://arxiv.org/pdf/{id}.pdf\"),\n-                source: \"arxiv\".into(),\n-                downloadable: true,\n-            });\n-        }\n-    }\n-\n-    // 2-9. Concurrent HTTP queries via tokio (shared runtime)\n-    pdf_runtime().block_on(resolve_pdf_async(doi, title, config))\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n /// Async version with configuration — caller owns the tokio runtime.\n ///\n /// All enabled sources are queried concurrently. Disabled sources are skipped.\n /// Source priority is determined by position in `config.sources` (first = highest).\n pub async fn resolve_pdf_async(\n     doi: Option<&str>,\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_with_config",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 221
+        },
+        "start": {
+          "column": 1,
+          "line": 187
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:198:5: replace resolve_pdf_with_config -> Option<ResolvedPdf> with None",
+    "package": "paper-resolver",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 66,
+        "line": 220
+      },
+      "start": {
+        "column": 5,
+        "line": 198
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace resolve_pdf_with_config -> Option<ResolvedPdf> with Some(Default::default())\n@@ -190,39 +190,17 @@\n /// For async callers, use [`resolve_pdf_async`].\n pub fn resolve_pdf_with_config(\n     doi: Option<&str>,\n     url: Option<&str>,\n     title: Option<&str>,\n     config: &ResolverConfig,\n ) -> Option<ResolvedPdf> {\n     // 1. arXiv — instant, no network\n-    if config.is_enabled(\"arxiv\") {\n-        if let Some(doi) = doi\n-            && let Some(id) = doi_to_arxiv_id(doi)\n-        {\n-            return Some(ResolvedPdf {\n-                url: format!(\"https://arxiv.org/pdf/{id}.pdf\"),\n-                source: \"arxiv\".into(),\n-                downloadable: true,\n-            });\n-        }\n-        if let Some(url) = url\n-            && let Some(id) = url_to_arxiv_id(url)\n-        {\n-            return Some(ResolvedPdf {\n-                url: format!(\"https://arxiv.org/pdf/{id}.pdf\"),\n-                source: \"arxiv\".into(),\n-                downloadable: true,\n-            });\n-        }\n-    }\n-\n-    // 2-9. Concurrent HTTP queries via tokio (shared runtime)\n-    pdf_runtime().block_on(resolve_pdf_async(doi, title, config))\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Async version with configuration — caller owns the tokio runtime.\n ///\n /// All enabled sources are queried concurrently. Disabled sources are skipped.\n /// Source priority is determined by position in `config.sources` (first = highest).\n pub async fn resolve_pdf_async(\n     doi: Option<&str>,\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_with_config",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 221
+        },
+        "start": {
+          "column": 1,
+          "line": 187
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:198:5: replace resolve_pdf_with_config -> Option<ResolvedPdf> with Some(Default::default())",
+    "package": "paper-resolver",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 66,
+        "line": 220
+      },
+      "start": {
+        "column": 5,
+        "line": 198
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace && with || in resolve_pdf_with_config\n@@ -192,17 +192,17 @@\n     doi: Option<&str>,\n     url: Option<&str>,\n     title: Option<&str>,\n     config: &ResolverConfig,\n ) -> Option<ResolvedPdf> {\n     // 1. arXiv — instant, no network\n     if config.is_enabled(\"arxiv\") {\n         if let Some(doi) = doi\n-            && let Some(id) = doi_to_arxiv_id(doi)\n+            || /* ~ changed by cargo-mutants ~ */ let Some(id) = doi_to_arxiv_id(doi)\n         {\n             return Some(ResolvedPdf {\n                 url: format!(\"https://arxiv.org/pdf/{id}.pdf\"),\n                 source: \"arxiv\".into(),\n                 downloadable: true,\n             });\n         }\n         if let Some(url) = url\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_with_config",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 221
+        },
+        "start": {
+          "column": 1,
+          "line": 187
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:200:13: replace && with || in resolve_pdf_with_config",
+    "package": "paper-resolver",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 15,
+        "line": 200
+      },
+      "start": {
+        "column": 13,
+        "line": 200
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace && with || in resolve_pdf_with_config\n@@ -201,17 +201,17 @@\n         {\n             return Some(ResolvedPdf {\n                 url: format!(\"https://arxiv.org/pdf/{id}.pdf\"),\n                 source: \"arxiv\".into(),\n                 downloadable: true,\n             });\n         }\n         if let Some(url) = url\n-            && let Some(id) = url_to_arxiv_id(url)\n+            || /* ~ changed by cargo-mutants ~ */ let Some(id) = url_to_arxiv_id(url)\n         {\n             return Some(ResolvedPdf {\n                 url: format!(\"https://arxiv.org/pdf/{id}.pdf\"),\n                 source: \"arxiv\".into(),\n                 downloadable: true,\n             });\n         }\n     }\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_with_config",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 221
+        },
+        "start": {
+          "column": 1,
+          "line": 187
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:209:13: replace && with || in resolve_pdf_with_config",
+    "package": "paper-resolver",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 15,
+        "line": 209
+      },
+      "start": {
+        "column": 13,
+        "line": 209
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace resolve_pdf_async -> Option<ResolvedPdf> with None\n@@ -224,71 +224,17 @@\n ///\n /// All enabled sources are queried concurrently. Disabled sources are skipped.\n /// Source priority is determined by position in `config.sources` (first = highest).\n pub async fn resolve_pdf_async(\n     doi: Option<&str>,\n     title: Option<&str>,\n     config: &ResolverConfig,\n ) -> Option<ResolvedPdf> {\n-    let client = reqwest::Client::builder()\n-        .timeout(std::time::Duration::from_secs(config.timeout_secs))\n-        .redirect(reqwest::redirect::Policy::limited(10))\n-        .build()\n-        .ok()?;\n-\n-    // Fire enabled sources concurrently via join_all pattern\n-    type PdfFuture<'a> =\n-        std::pin::Pin<Box<dyn std::future::Future<Output = Option<(u8, ResolvedPdf)>> + Send + 'a>>;\n-    let mut futures: Vec<PdfFuture<'_>> = Vec::new();\n-\n-    for source in &config.sources {\n-        if !source.enabled {\n-            continue;\n-        }\n-        let pri = config.priority(&source.name);\n-        let c = &client;\n-        match source.name.as_str() {\n-            \"arxiv\" => {} // Already handled synchronously above\n-            \"openalex\" => futures.push(Box::pin(async move {\n-                try_openalex(c, doi, title).await.map(|r| (pri, r))\n-            })),\n-            \"core\" => futures.push(Box::pin(async move {\n-                try_core(c, doi, title).await.map(|r| (pri, r))\n-            })),\n-            \"google_scholar\" => futures.push(Box::pin(async move {\n-                try_google_scholar(c, title).await.map(|r| (pri, r))\n-            })),\n-            \"unpaywall\" => futures.push(Box::pin(async move {\n-                try_unpaywall(c, doi).await.map(|r| (pri, r))\n-            })),\n-            \"crossref\" => futures.push(Box::pin(async move {\n-                try_crossref(c, doi).await.map(|r| (pri, r))\n-            })),\n-            \"zenodo\" => futures.push(Box::pin(async move {\n-                try_zenodo(c, title).await.map(|r| (pri, r))\n-            })),\n-            \"ssrn\" => futures.push(Box::pin(async move {\n-                try_ssrn(c, title).await.map(|r| (pri, r))\n-            })),\n-            \"semantic_scholar\" => futures.push(Box::pin(async move {\n-                try_semantic_scholar(c, doi, title).await.map(|r| (pri, r))\n-            })),\n-            _ => {} // Unknown source name, skip\n-        }\n-    }\n-\n-    let results = futures::future::join_all(futures).await;\n-\n-    // Collect successful results\n-    let mut candidates: Vec<(u8, ResolvedPdf)> = results.into_iter().flatten().collect();\n-\n-    // Prefer downloadable, then highest priority (lowest number)\n-    candidates.sort_by_key(|(pri, r)| (!r.downloadable, *pri));\n-    candidates.into_iter().next().map(|(_, r)| r)\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // arXiv helpers\n // ---------------------------------------------------------------------------\n \n fn doi_to_arxiv_id(doi: &str) -> Option<String> {\n     doi.strip_prefix(\"10.48550/arXiv.\").map(String::from)\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_async",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 287
+        },
+        "start": {
+          "column": 1,
+          "line": 223
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:232:5: replace resolve_pdf_async -> Option<ResolvedPdf> with None",
+    "package": "paper-resolver",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 50,
+        "line": 286
+      },
+      "start": {
+        "column": 5,
+        "line": 232
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace resolve_pdf_async -> Option<ResolvedPdf> with Some(Default::default())\n@@ -224,71 +224,17 @@\n ///\n /// All enabled sources are queried concurrently. Disabled sources are skipped.\n /// Source priority is determined by position in `config.sources` (first = highest).\n pub async fn resolve_pdf_async(\n     doi: Option<&str>,\n     title: Option<&str>,\n     config: &ResolverConfig,\n ) -> Option<ResolvedPdf> {\n-    let client = reqwest::Client::builder()\n-        .timeout(std::time::Duration::from_secs(config.timeout_secs))\n-        .redirect(reqwest::redirect::Policy::limited(10))\n-        .build()\n-        .ok()?;\n-\n-    // Fire enabled sources concurrently via join_all pattern\n-    type PdfFuture<'a> =\n-        std::pin::Pin<Box<dyn std::future::Future<Output = Option<(u8, ResolvedPdf)>> + Send + 'a>>;\n-    let mut futures: Vec<PdfFuture<'_>> = Vec::new();\n-\n-    for source in &config.sources {\n-        if !source.enabled {\n-            continue;\n-        }\n-        let pri = config.priority(&source.name);\n-        let c = &client;\n-        match source.name.as_str() {\n-            \"arxiv\" => {} // Already handled synchronously above\n-            \"openalex\" => futures.push(Box::pin(async move {\n-                try_openalex(c, doi, title).await.map(|r| (pri, r))\n-            })),\n-            \"core\" => futures.push(Box::pin(async move {\n-                try_core(c, doi, title).await.map(|r| (pri, r))\n-            })),\n-            \"google_scholar\" => futures.push(Box::pin(async move {\n-                try_google_scholar(c, title).await.map(|r| (pri, r))\n-            })),\n-            \"unpaywall\" => futures.push(Box::pin(async move {\n-                try_unpaywall(c, doi).await.map(|r| (pri, r))\n-            })),\n-            \"crossref\" => futures.push(Box::pin(async move {\n-                try_crossref(c, doi).await.map(|r| (pri, r))\n-            })),\n-            \"zenodo\" => futures.push(Box::pin(async move {\n-                try_zenodo(c, title).await.map(|r| (pri, r))\n-            })),\n-            \"ssrn\" => futures.push(Box::pin(async move {\n-                try_ssrn(c, title).await.map(|r| (pri, r))\n-            })),\n-            \"semantic_scholar\" => futures.push(Box::pin(async move {\n-                try_semantic_scholar(c, doi, title).await.map(|r| (pri, r))\n-            })),\n-            _ => {} // Unknown source name, skip\n-        }\n-    }\n-\n-    let results = futures::future::join_all(futures).await;\n-\n-    // Collect successful results\n-    let mut candidates: Vec<(u8, ResolvedPdf)> = results.into_iter().flatten().collect();\n-\n-    // Prefer downloadable, then highest priority (lowest number)\n-    candidates.sort_by_key(|(pri, r)| (!r.downloadable, *pri));\n-    candidates.into_iter().next().map(|(_, r)| r)\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // arXiv helpers\n // ---------------------------------------------------------------------------\n \n fn doi_to_arxiv_id(doi: &str) -> Option<String> {\n     doi.strip_prefix(\"10.48550/arXiv.\").map(String::from)\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_async",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 287
+        },
+        "start": {
+          "column": 1,
+          "line": 223
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:232:5: replace resolve_pdf_async -> Option<ResolvedPdf> with Some(Default::default())",
+    "package": "paper-resolver",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 50,
+        "line": 286
+      },
+      "start": {
+        "column": 5,
+        "line": 232
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete ! in resolve_pdf_async\n@@ -236,17 +236,17 @@\n         .ok()?;\n \n     // Fire enabled sources concurrently via join_all pattern\n     type PdfFuture<'a> =\n         std::pin::Pin<Box<dyn std::future::Future<Output = Option<(u8, ResolvedPdf)>> + Send + 'a>>;\n     let mut futures: Vec<PdfFuture<'_>> = Vec::new();\n \n     for source in &config.sources {\n-        if !source.enabled {\n+        if  /* ~ changed by cargo-mutants ~ */source.enabled {\n             continue;\n         }\n         let pri = config.priority(&source.name);\n         let c = &client;\n         match source.name.as_str() {\n             \"arxiv\" => {} // Already handled synchronously above\n             \"openalex\" => futures.push(Box::pin(async move {\n                 try_openalex(c, doi, title).await.map(|r| (pri, r))\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_async",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 287
+        },
+        "start": {
+          "column": 1,
+          "line": 223
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:244:12: delete ! in resolve_pdf_async",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 244
+      },
+      "start": {
+        "column": 12,
+        "line": 244
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete match arm \"arxiv\" in resolve_pdf_async\n@@ -242,17 +242,17 @@\n \n     for source in &config.sources {\n         if !source.enabled {\n             continue;\n         }\n         let pri = config.priority(&source.name);\n         let c = &client;\n         match source.name.as_str() {\n-            \"arxiv\" => {} // Already handled synchronously above\n+             /* ~ changed by cargo-mutants ~ */ // Already handled synchronously above\n             \"openalex\" => futures.push(Box::pin(async move {\n                 try_openalex(c, doi, title).await.map(|r| (pri, r))\n             })),\n             \"core\" => futures.push(Box::pin(async move {\n                 try_core(c, doi, title).await.map(|r| (pri, r))\n             })),\n             \"google_scholar\" => futures.push(Box::pin(async move {\n                 try_google_scholar(c, title).await.map(|r| (pri, r))\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_async",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 287
+        },
+        "start": {
+          "column": 1,
+          "line": 223
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/paper-resolver/src/lib.rs:250:13: delete match arm \"arxiv\" in resolve_pdf_async",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 26,
+        "line": 250
+      },
+      "start": {
+        "column": 13,
+        "line": 250
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete match arm \"openalex\" in resolve_pdf_async\n@@ -243,19 +243,17 @@\n     for source in &config.sources {\n         if !source.enabled {\n             continue;\n         }\n         let pri = config.priority(&source.name);\n         let c = &client;\n         match source.name.as_str() {\n             \"arxiv\" => {} // Already handled synchronously above\n-            \"openalex\" => futures.push(Box::pin(async move {\n-                try_openalex(c, doi, title).await.map(|r| (pri, r))\n-            })),\n+             /* ~ changed by cargo-mutants ~ */\n             \"core\" => futures.push(Box::pin(async move {\n                 try_core(c, doi, title).await.map(|r| (pri, r))\n             })),\n             \"google_scholar\" => futures.push(Box::pin(async move {\n                 try_google_scholar(c, title).await.map(|r| (pri, r))\n             })),\n             \"unpaywall\" => futures.push(Box::pin(async move {\n                 try_unpaywall(c, doi).await.map(|r| (pri, r))\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_async",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 287
+        },
+        "start": {
+          "column": 1,
+          "line": 223
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/paper-resolver/src/lib.rs:251:13: delete match arm \"openalex\" in resolve_pdf_async",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 253
+      },
+      "start": {
+        "column": 13,
+        "line": 251
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete match arm \"core\" in resolve_pdf_async\n@@ -246,19 +246,17 @@\n         }\n         let pri = config.priority(&source.name);\n         let c = &client;\n         match source.name.as_str() {\n             \"arxiv\" => {} // Already handled synchronously above\n             \"openalex\" => futures.push(Box::pin(async move {\n                 try_openalex(c, doi, title).await.map(|r| (pri, r))\n             })),\n-            \"core\" => futures.push(Box::pin(async move {\n-                try_core(c, doi, title).await.map(|r| (pri, r))\n-            })),\n+             /* ~ changed by cargo-mutants ~ */\n             \"google_scholar\" => futures.push(Box::pin(async move {\n                 try_google_scholar(c, title).await.map(|r| (pri, r))\n             })),\n             \"unpaywall\" => futures.push(Box::pin(async move {\n                 try_unpaywall(c, doi).await.map(|r| (pri, r))\n             })),\n             \"crossref\" => futures.push(Box::pin(async move {\n                 try_crossref(c, doi).await.map(|r| (pri, r))\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_async",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 287
+        },
+        "start": {
+          "column": 1,
+          "line": 223
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/paper-resolver/src/lib.rs:254:13: delete match arm \"core\" in resolve_pdf_async",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 256
+      },
+      "start": {
+        "column": 13,
+        "line": 254
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete match arm \"google_scholar\" in resolve_pdf_async\n@@ -249,19 +249,17 @@\n         match source.name.as_str() {\n             \"arxiv\" => {} // Already handled synchronously above\n             \"openalex\" => futures.push(Box::pin(async move {\n                 try_openalex(c, doi, title).await.map(|r| (pri, r))\n             })),\n             \"core\" => futures.push(Box::pin(async move {\n                 try_core(c, doi, title).await.map(|r| (pri, r))\n             })),\n-            \"google_scholar\" => futures.push(Box::pin(async move {\n-                try_google_scholar(c, title).await.map(|r| (pri, r))\n-            })),\n+             /* ~ changed by cargo-mutants ~ */\n             \"unpaywall\" => futures.push(Box::pin(async move {\n                 try_unpaywall(c, doi).await.map(|r| (pri, r))\n             })),\n             \"crossref\" => futures.push(Box::pin(async move {\n                 try_crossref(c, doi).await.map(|r| (pri, r))\n             })),\n             \"zenodo\" => futures.push(Box::pin(async move {\n                 try_zenodo(c, title).await.map(|r| (pri, r))\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_async",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 287
+        },
+        "start": {
+          "column": 1,
+          "line": 223
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/paper-resolver/src/lib.rs:257:13: delete match arm \"google_scholar\" in resolve_pdf_async",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 259
+      },
+      "start": {
+        "column": 13,
+        "line": 257
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete match arm \"unpaywall\" in resolve_pdf_async\n@@ -252,19 +252,17 @@\n                 try_openalex(c, doi, title).await.map(|r| (pri, r))\n             })),\n             \"core\" => futures.push(Box::pin(async move {\n                 try_core(c, doi, title).await.map(|r| (pri, r))\n             })),\n             \"google_scholar\" => futures.push(Box::pin(async move {\n                 try_google_scholar(c, title).await.map(|r| (pri, r))\n             })),\n-            \"unpaywall\" => futures.push(Box::pin(async move {\n-                try_unpaywall(c, doi).await.map(|r| (pri, r))\n-            })),\n+             /* ~ changed by cargo-mutants ~ */\n             \"crossref\" => futures.push(Box::pin(async move {\n                 try_crossref(c, doi).await.map(|r| (pri, r))\n             })),\n             \"zenodo\" => futures.push(Box::pin(async move {\n                 try_zenodo(c, title).await.map(|r| (pri, r))\n             })),\n             \"ssrn\" => futures.push(Box::pin(async move {\n                 try_ssrn(c, title).await.map(|r| (pri, r))\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_async",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 287
+        },
+        "start": {
+          "column": 1,
+          "line": 223
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/paper-resolver/src/lib.rs:260:13: delete match arm \"unpaywall\" in resolve_pdf_async",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 262
+      },
+      "start": {
+        "column": 13,
+        "line": 260
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete match arm \"crossref\" in resolve_pdf_async\n@@ -255,19 +255,17 @@\n                 try_core(c, doi, title).await.map(|r| (pri, r))\n             })),\n             \"google_scholar\" => futures.push(Box::pin(async move {\n                 try_google_scholar(c, title).await.map(|r| (pri, r))\n             })),\n             \"unpaywall\" => futures.push(Box::pin(async move {\n                 try_unpaywall(c, doi).await.map(|r| (pri, r))\n             })),\n-            \"crossref\" => futures.push(Box::pin(async move {\n-                try_crossref(c, doi).await.map(|r| (pri, r))\n-            })),\n+             /* ~ changed by cargo-mutants ~ */\n             \"zenodo\" => futures.push(Box::pin(async move {\n                 try_zenodo(c, title).await.map(|r| (pri, r))\n             })),\n             \"ssrn\" => futures.push(Box::pin(async move {\n                 try_ssrn(c, title).await.map(|r| (pri, r))\n             })),\n             \"semantic_scholar\" => futures.push(Box::pin(async move {\n                 try_semantic_scholar(c, doi, title).await.map(|r| (pri, r))\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_async",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 287
+        },
+        "start": {
+          "column": 1,
+          "line": 223
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/paper-resolver/src/lib.rs:263:13: delete match arm \"crossref\" in resolve_pdf_async",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 265
+      },
+      "start": {
+        "column": 13,
+        "line": 263
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete match arm \"zenodo\" in resolve_pdf_async\n@@ -258,19 +258,17 @@\n                 try_google_scholar(c, title).await.map(|r| (pri, r))\n             })),\n             \"unpaywall\" => futures.push(Box::pin(async move {\n                 try_unpaywall(c, doi).await.map(|r| (pri, r))\n             })),\n             \"crossref\" => futures.push(Box::pin(async move {\n                 try_crossref(c, doi).await.map(|r| (pri, r))\n             })),\n-            \"zenodo\" => futures.push(Box::pin(async move {\n-                try_zenodo(c, title).await.map(|r| (pri, r))\n-            })),\n+             /* ~ changed by cargo-mutants ~ */\n             \"ssrn\" => futures.push(Box::pin(async move {\n                 try_ssrn(c, title).await.map(|r| (pri, r))\n             })),\n             \"semantic_scholar\" => futures.push(Box::pin(async move {\n                 try_semantic_scholar(c, doi, title).await.map(|r| (pri, r))\n             })),\n             _ => {} // Unknown source name, skip\n         }\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_async",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 287
+        },
+        "start": {
+          "column": 1,
+          "line": 223
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/paper-resolver/src/lib.rs:266:13: delete match arm \"zenodo\" in resolve_pdf_async",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 268
+      },
+      "start": {
+        "column": 13,
+        "line": 266
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete match arm \"ssrn\" in resolve_pdf_async\n@@ -261,19 +261,17 @@\n                 try_unpaywall(c, doi).await.map(|r| (pri, r))\n             })),\n             \"crossref\" => futures.push(Box::pin(async move {\n                 try_crossref(c, doi).await.map(|r| (pri, r))\n             })),\n             \"zenodo\" => futures.push(Box::pin(async move {\n                 try_zenodo(c, title).await.map(|r| (pri, r))\n             })),\n-            \"ssrn\" => futures.push(Box::pin(async move {\n-                try_ssrn(c, title).await.map(|r| (pri, r))\n-            })),\n+             /* ~ changed by cargo-mutants ~ */\n             \"semantic_scholar\" => futures.push(Box::pin(async move {\n                 try_semantic_scholar(c, doi, title).await.map(|r| (pri, r))\n             })),\n             _ => {} // Unknown source name, skip\n         }\n     }\n \n     let results = futures::future::join_all(futures).await;\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_async",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 287
+        },
+        "start": {
+          "column": 1,
+          "line": 223
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/paper-resolver/src/lib.rs:269:13: delete match arm \"ssrn\" in resolve_pdf_async",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 271
+      },
+      "start": {
+        "column": 13,
+        "line": 269
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete match arm \"semantic_scholar\" in resolve_pdf_async\n@@ -264,19 +264,17 @@\n                 try_crossref(c, doi).await.map(|r| (pri, r))\n             })),\n             \"zenodo\" => futures.push(Box::pin(async move {\n                 try_zenodo(c, title).await.map(|r| (pri, r))\n             })),\n             \"ssrn\" => futures.push(Box::pin(async move {\n                 try_ssrn(c, title).await.map(|r| (pri, r))\n             })),\n-            \"semantic_scholar\" => futures.push(Box::pin(async move {\n-                try_semantic_scholar(c, doi, title).await.map(|r| (pri, r))\n-            })),\n+             /* ~ changed by cargo-mutants ~ */\n             _ => {} // Unknown source name, skip\n         }\n     }\n \n     let results = futures::future::join_all(futures).await;\n \n     // Collect successful results\n     let mut candidates: Vec<(u8, ResolvedPdf)> = results.into_iter().flatten().collect();\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_async",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 287
+        },
+        "start": {
+          "column": 1,
+          "line": 223
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/paper-resolver/src/lib.rs:272:13: delete match arm \"semantic_scholar\" in resolve_pdf_async",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 274
+      },
+      "start": {
+        "column": 13,
+        "line": 272
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete ! in resolve_pdf_async\n@@ -277,17 +277,17 @@\n     }\n \n     let results = futures::future::join_all(futures).await;\n \n     // Collect successful results\n     let mut candidates: Vec<(u8, ResolvedPdf)> = results.into_iter().flatten().collect();\n \n     // Prefer downloadable, then highest priority (lowest number)\n-    candidates.sort_by_key(|(pri, r)| (!r.downloadable, *pri));\n+    candidates.sort_by_key(|(pri, r)| ( /* ~ changed by cargo-mutants ~ */r.downloadable, *pri));\n     candidates.into_iter().next().map(|(_, r)| r)\n }\n \n // ---------------------------------------------------------------------------\n // arXiv helpers\n // ---------------------------------------------------------------------------\n \n fn doi_to_arxiv_id(doi: &str) -> Option<String> {\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "resolve_pdf_async",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 287
+        },
+        "start": {
+          "column": 1,
+          "line": 223
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:285:40: delete ! in resolve_pdf_async",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 41,
+        "line": 285
+      },
+      "start": {
+        "column": 40,
+        "line": 285
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace doi_to_arxiv_id -> Option<String> with None\n@@ -286,17 +286,17 @@\n     candidates.into_iter().next().map(|(_, r)| r)\n }\n \n // ---------------------------------------------------------------------------\n // arXiv helpers\n // ---------------------------------------------------------------------------\n \n fn doi_to_arxiv_id(doi: &str) -> Option<String> {\n-    doi.strip_prefix(\"10.48550/arXiv.\").map(String::from)\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n fn url_to_arxiv_id(url: &str) -> Option<String> {\n     ARXIV_RE.captures(url).map(|c| c[1].to_string())\n }\n \n // ---------------------------------------------------------------------------\n // OpenAlex\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "doi_to_arxiv_id",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 295
+        },
+        "start": {
+          "column": 1,
+          "line": 293
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:294:5: replace doi_to_arxiv_id -> Option<String> with None",
+    "package": "paper-resolver",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 58,
+        "line": 294
+      },
+      "start": {
+        "column": 5,
+        "line": 294
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace doi_to_arxiv_id -> Option<String> with Some(String::new())\n@@ -286,17 +286,17 @@\n     candidates.into_iter().next().map(|(_, r)| r)\n }\n \n // ---------------------------------------------------------------------------\n // arXiv helpers\n // ---------------------------------------------------------------------------\n \n fn doi_to_arxiv_id(doi: &str) -> Option<String> {\n-    doi.strip_prefix(\"10.48550/arXiv.\").map(String::from)\n+    Some(String::new()) /* ~ changed by cargo-mutants ~ */\n }\n \n fn url_to_arxiv_id(url: &str) -> Option<String> {\n     ARXIV_RE.captures(url).map(|c| c[1].to_string())\n }\n \n // ---------------------------------------------------------------------------\n // OpenAlex\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "doi_to_arxiv_id",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 295
+        },
+        "start": {
+          "column": 1,
+          "line": 293
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:294:5: replace doi_to_arxiv_id -> Option<String> with Some(String::new())",
+    "package": "paper-resolver",
+    "replacement": "Some(String::new())",
+    "span": {
+      "end": {
+        "column": 58,
+        "line": 294
+      },
+      "start": {
+        "column": 5,
+        "line": 294
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace doi_to_arxiv_id -> Option<String> with Some(\"xyzzy\".into())\n@@ -286,17 +286,17 @@\n     candidates.into_iter().next().map(|(_, r)| r)\n }\n \n // ---------------------------------------------------------------------------\n // arXiv helpers\n // ---------------------------------------------------------------------------\n \n fn doi_to_arxiv_id(doi: &str) -> Option<String> {\n-    doi.strip_prefix(\"10.48550/arXiv.\").map(String::from)\n+    Some(\"xyzzy\".into()) /* ~ changed by cargo-mutants ~ */\n }\n \n fn url_to_arxiv_id(url: &str) -> Option<String> {\n     ARXIV_RE.captures(url).map(|c| c[1].to_string())\n }\n \n // ---------------------------------------------------------------------------\n // OpenAlex\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "doi_to_arxiv_id",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 295
+        },
+        "start": {
+          "column": 1,
+          "line": 293
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:294:5: replace doi_to_arxiv_id -> Option<String> with Some(\"xyzzy\".into())",
+    "package": "paper-resolver",
+    "replacement": "Some(\"xyzzy\".into())",
+    "span": {
+      "end": {
+        "column": 58,
+        "line": 294
+      },
+      "start": {
+        "column": 5,
+        "line": 294
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace url_to_arxiv_id -> Option<String> with None\n@@ -290,17 +290,17 @@\n // arXiv helpers\n // ---------------------------------------------------------------------------\n \n fn doi_to_arxiv_id(doi: &str) -> Option<String> {\n     doi.strip_prefix(\"10.48550/arXiv.\").map(String::from)\n }\n \n fn url_to_arxiv_id(url: &str) -> Option<String> {\n-    ARXIV_RE.captures(url).map(|c| c[1].to_string())\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // OpenAlex\n // ---------------------------------------------------------------------------\n \n async fn try_openalex(\n     client: &reqwest::Client,\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "url_to_arxiv_id",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 299
+        },
+        "start": {
+          "column": 1,
+          "line": 297
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:298:5: replace url_to_arxiv_id -> Option<String> with None",
+    "package": "paper-resolver",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 53,
+        "line": 298
+      },
+      "start": {
+        "column": 5,
+        "line": 298
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace url_to_arxiv_id -> Option<String> with Some(String::new())\n@@ -290,17 +290,17 @@\n // arXiv helpers\n // ---------------------------------------------------------------------------\n \n fn doi_to_arxiv_id(doi: &str) -> Option<String> {\n     doi.strip_prefix(\"10.48550/arXiv.\").map(String::from)\n }\n \n fn url_to_arxiv_id(url: &str) -> Option<String> {\n-    ARXIV_RE.captures(url).map(|c| c[1].to_string())\n+    Some(String::new()) /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // OpenAlex\n // ---------------------------------------------------------------------------\n \n async fn try_openalex(\n     client: &reqwest::Client,\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "url_to_arxiv_id",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 299
+        },
+        "start": {
+          "column": 1,
+          "line": 297
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:298:5: replace url_to_arxiv_id -> Option<String> with Some(String::new())",
+    "package": "paper-resolver",
+    "replacement": "Some(String::new())",
+    "span": {
+      "end": {
+        "column": 53,
+        "line": 298
+      },
+      "start": {
+        "column": 5,
+        "line": 298
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace url_to_arxiv_id -> Option<String> with Some(\"xyzzy\".into())\n@@ -290,17 +290,17 @@\n // arXiv helpers\n // ---------------------------------------------------------------------------\n \n fn doi_to_arxiv_id(doi: &str) -> Option<String> {\n     doi.strip_prefix(\"10.48550/arXiv.\").map(String::from)\n }\n \n fn url_to_arxiv_id(url: &str) -> Option<String> {\n-    ARXIV_RE.captures(url).map(|c| c[1].to_string())\n+    Some(\"xyzzy\".into()) /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // OpenAlex\n // ---------------------------------------------------------------------------\n \n async fn try_openalex(\n     client: &reqwest::Client,\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "url_to_arxiv_id",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 299
+        },
+        "start": {
+          "column": 1,
+          "line": 297
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:298:5: replace url_to_arxiv_id -> Option<String> with Some(\"xyzzy\".into())",
+    "package": "paper-resolver",
+    "replacement": "Some(\"xyzzy\".into())",
+    "span": {
+      "end": {
+        "column": 53,
+        "line": 298
+      },
+      "start": {
+        "column": 5,
+        "line": 298
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace try_openalex -> Option<ResolvedPdf> with None\n@@ -302,82 +302,17 @@\n // OpenAlex\n // ---------------------------------------------------------------------------\n \n async fn try_openalex(\n     client: &reqwest::Client,\n     doi: Option<&str>,\n     title: Option<&str>,\n ) -> Option<ResolvedPdf> {\n-    let resp = if let Some(doi) = doi {\n-        client\n-            .get(format!(\"https://api.openalex.org/works/doi:{doi}\"))\n-            .query(&[(\"select\", \"open_access,locations,best_oa_location\")])\n-            .send()\n-            .await\n-            .ok()?\n-    } else {\n-        let title = title?;\n-        client\n-            .get(\"https://api.openalex.org/works\")\n-            .query(&[\n-                (\"search\", title),\n-                (\"per_page\", \"1\"),\n-                (\"select\", \"open_access,locations,best_oa_location\"),\n-            ])\n-            .send()\n-            .await\n-            .ok()?\n-    };\n-\n-    if !resp.status().is_success() {\n-        return None;\n-    }\n-    let data: serde_json::Value = resp.json().await.ok()?;\n-\n-    let work = if let Some(results) = data.get(\"results\").and_then(|v| v.as_array()) {\n-        results.first()?\n-    } else {\n-        &data\n-    };\n-\n-    // Try best_oa_location.pdf_url → open_access.oa_url → locations[].pdf_url\n-    if let Some(url) = work\n-        .pointer(\"/best_oa_location/pdf_url\")\n-        .and_then(|v| v.as_str())\n-    {\n-        return Some(ResolvedPdf {\n-            url: url.into(),\n-            source: \"openalex\".into(),\n-            downloadable: is_downloadable(url),\n-        });\n-    }\n-    if let Some(url) = work.pointer(\"/open_access/oa_url\").and_then(|v| v.as_str())\n-        && url.ends_with(\".pdf\")\n-    {\n-        return Some(ResolvedPdf {\n-            url: url.into(),\n-            source: \"openalex\".into(),\n-            downloadable: is_downloadable(url),\n-        });\n-    }\n-    for loc in work\n-        .get(\"locations\")\n-        .and_then(|v| v.as_array())\n-        .unwrap_or(&vec![])\n-    {\n-        if let Some(url) = loc.get(\"pdf_url\").and_then(|v| v.as_str()) {\n-            return Some(ResolvedPdf {\n-                url: url.into(),\n-                source: \"openalex\".into(),\n-                downloadable: is_downloadable(url),\n-            });\n-        }\n-    }\n-    None\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // CORE\n // ---------------------------------------------------------------------------\n \n async fn try_core(\n     client: &reqwest::Client,\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_openalex",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 376
+        },
+        "start": {
+          "column": 1,
+          "line": 305
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:310:5: replace try_openalex -> Option<ResolvedPdf> with None",
+    "package": "paper-resolver",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 375
+      },
+      "start": {
+        "column": 5,
+        "line": 310
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace try_openalex -> Option<ResolvedPdf> with Some(Default::default())\n@@ -302,82 +302,17 @@\n // OpenAlex\n // ---------------------------------------------------------------------------\n \n async fn try_openalex(\n     client: &reqwest::Client,\n     doi: Option<&str>,\n     title: Option<&str>,\n ) -> Option<ResolvedPdf> {\n-    let resp = if let Some(doi) = doi {\n-        client\n-            .get(format!(\"https://api.openalex.org/works/doi:{doi}\"))\n-            .query(&[(\"select\", \"open_access,locations,best_oa_location\")])\n-            .send()\n-            .await\n-            .ok()?\n-    } else {\n-        let title = title?;\n-        client\n-            .get(\"https://api.openalex.org/works\")\n-            .query(&[\n-                (\"search\", title),\n-                (\"per_page\", \"1\"),\n-                (\"select\", \"open_access,locations,best_oa_location\"),\n-            ])\n-            .send()\n-            .await\n-            .ok()?\n-    };\n-\n-    if !resp.status().is_success() {\n-        return None;\n-    }\n-    let data: serde_json::Value = resp.json().await.ok()?;\n-\n-    let work = if let Some(results) = data.get(\"results\").and_then(|v| v.as_array()) {\n-        results.first()?\n-    } else {\n-        &data\n-    };\n-\n-    // Try best_oa_location.pdf_url → open_access.oa_url → locations[].pdf_url\n-    if let Some(url) = work\n-        .pointer(\"/best_oa_location/pdf_url\")\n-        .and_then(|v| v.as_str())\n-    {\n-        return Some(ResolvedPdf {\n-            url: url.into(),\n-            source: \"openalex\".into(),\n-            downloadable: is_downloadable(url),\n-        });\n-    }\n-    if let Some(url) = work.pointer(\"/open_access/oa_url\").and_then(|v| v.as_str())\n-        && url.ends_with(\".pdf\")\n-    {\n-        return Some(ResolvedPdf {\n-            url: url.into(),\n-            source: \"openalex\".into(),\n-            downloadable: is_downloadable(url),\n-        });\n-    }\n-    for loc in work\n-        .get(\"locations\")\n-        .and_then(|v| v.as_array())\n-        .unwrap_or(&vec![])\n-    {\n-        if let Some(url) = loc.get(\"pdf_url\").and_then(|v| v.as_str()) {\n-            return Some(ResolvedPdf {\n-                url: url.into(),\n-                source: \"openalex\".into(),\n-                downloadable: is_downloadable(url),\n-            });\n-        }\n-    }\n-    None\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // CORE\n // ---------------------------------------------------------------------------\n \n async fn try_core(\n     client: &reqwest::Client,\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_openalex",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 376
+        },
+        "start": {
+          "column": 1,
+          "line": 305
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:310:5: replace try_openalex -> Option<ResolvedPdf> with Some(Default::default())",
+    "package": "paper-resolver",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 375
+      },
+      "start": {
+        "column": 5,
+        "line": 310
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete ! in try_openalex\n@@ -323,17 +323,17 @@\n                 (\"per_page\", \"1\"),\n                 (\"select\", \"open_access,locations,best_oa_location\"),\n             ])\n             .send()\n             .await\n             .ok()?\n     };\n \n-    if !resp.status().is_success() {\n+    if  /* ~ changed by cargo-mutants ~ */resp.status().is_success() {\n         return None;\n     }\n     let data: serde_json::Value = resp.json().await.ok()?;\n \n     let work = if let Some(results) = data.get(\"results\").and_then(|v| v.as_array()) {\n         results.first()?\n     } else {\n         &data\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_openalex",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 376
+        },
+        "start": {
+          "column": 1,
+          "line": 305
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:331:8: delete ! in try_openalex",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 331
+      },
+      "start": {
+        "column": 8,
+        "line": 331
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace && with || in try_openalex\n@@ -346,17 +346,17 @@\n     {\n         return Some(ResolvedPdf {\n             url: url.into(),\n             source: \"openalex\".into(),\n             downloadable: is_downloadable(url),\n         });\n     }\n     if let Some(url) = work.pointer(\"/open_access/oa_url\").and_then(|v| v.as_str())\n-        && url.ends_with(\".pdf\")\n+        || /* ~ changed by cargo-mutants ~ */ url.ends_with(\".pdf\")\n     {\n         return Some(ResolvedPdf {\n             url: url.into(),\n             source: \"openalex\".into(),\n             downloadable: is_downloadable(url),\n         });\n     }\n     for loc in work\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_openalex",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 376
+        },
+        "start": {
+          "column": 1,
+          "line": 305
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:354:9: replace && with || in try_openalex",
+    "package": "paper-resolver",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 354
+      },
+      "start": {
+        "column": 9,
+        "line": 354
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace try_core -> Option<ResolvedPdf> with None\n@@ -379,44 +379,17 @@\n // CORE\n // ---------------------------------------------------------------------------\n \n async fn try_core(\n     client: &reqwest::Client,\n     doi: Option<&str>,\n     title: Option<&str>,\n ) -> Option<ResolvedPdf> {\n-    let query = if let Some(doi) = doi {\n-        format!(r#\"doi:\"{doi}\"\"#)\n-    } else {\n-        let title = title?;\n-        format!(r#\"title:\"{title}\"\"#)\n-    };\n-\n-    let resp = client\n-        .get(\"https://api.core.ac.uk/v3/search/works\")\n-        .query(&[(\"q\", &query), (\"limit\", &\"1\".to_string())])\n-        .send()\n-        .await\n-        .ok()?;\n-\n-    if !resp.status().is_success() {\n-        return None;\n-    }\n-    let data: serde_json::Value = resp.json().await.ok()?;\n-    let work = data.get(\"results\")?.as_array()?.first()?;\n-\n-    if let Some(url) = work.get(\"downloadUrl\").and_then(|v| v.as_str()) {\n-        return Some(ResolvedPdf {\n-            url: url.into(),\n-            source: \"core\".into(),\n-            downloadable: is_downloadable(url),\n-        });\n-    }\n-    None\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // Google Scholar\n // ---------------------------------------------------------------------------\n \n async fn try_google_scholar(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {\n     let title = title?;\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_core",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 415
+        },
+        "start": {
+          "column": 1,
+          "line": 382
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:387:5: replace try_core -> Option<ResolvedPdf> with None",
+    "package": "paper-resolver",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 414
+      },
+      "start": {
+        "column": 5,
+        "line": 387
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace try_core -> Option<ResolvedPdf> with Some(Default::default())\n@@ -379,44 +379,17 @@\n // CORE\n // ---------------------------------------------------------------------------\n \n async fn try_core(\n     client: &reqwest::Client,\n     doi: Option<&str>,\n     title: Option<&str>,\n ) -> Option<ResolvedPdf> {\n-    let query = if let Some(doi) = doi {\n-        format!(r#\"doi:\"{doi}\"\"#)\n-    } else {\n-        let title = title?;\n-        format!(r#\"title:\"{title}\"\"#)\n-    };\n-\n-    let resp = client\n-        .get(\"https://api.core.ac.uk/v3/search/works\")\n-        .query(&[(\"q\", &query), (\"limit\", &\"1\".to_string())])\n-        .send()\n-        .await\n-        .ok()?;\n-\n-    if !resp.status().is_success() {\n-        return None;\n-    }\n-    let data: serde_json::Value = resp.json().await.ok()?;\n-    let work = data.get(\"results\")?.as_array()?.first()?;\n-\n-    if let Some(url) = work.get(\"downloadUrl\").and_then(|v| v.as_str()) {\n-        return Some(ResolvedPdf {\n-            url: url.into(),\n-            source: \"core\".into(),\n-            downloadable: is_downloadable(url),\n-        });\n-    }\n-    None\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // Google Scholar\n // ---------------------------------------------------------------------------\n \n async fn try_google_scholar(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {\n     let title = title?;\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_core",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 415
+        },
+        "start": {
+          "column": 1,
+          "line": 382
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:387:5: replace try_core -> Option<ResolvedPdf> with Some(Default::default())",
+    "package": "paper-resolver",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 414
+      },
+      "start": {
+        "column": 5,
+        "line": 387
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete ! in try_core\n@@ -393,17 +393,17 @@\n \n     let resp = client\n         .get(\"https://api.core.ac.uk/v3/search/works\")\n         .query(&[(\"q\", &query), (\"limit\", &\"1\".to_string())])\n         .send()\n         .await\n         .ok()?;\n \n-    if !resp.status().is_success() {\n+    if  /* ~ changed by cargo-mutants ~ */resp.status().is_success() {\n         return None;\n     }\n     let data: serde_json::Value = resp.json().await.ok()?;\n     let work = data.get(\"results\")?.as_array()?.first()?;\n \n     if let Some(url) = work.get(\"downloadUrl\").and_then(|v| v.as_str()) {\n         return Some(ResolvedPdf {\n             url: url.into(),\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_core",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 415
+        },
+        "start": {
+          "column": 1,
+          "line": 382
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:401:8: delete ! in try_core",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 401
+      },
+      "start": {
+        "column": 8,
+        "line": 401
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace try_google_scholar -> Option<ResolvedPdf> with None\n@@ -414,60 +414,17 @@\n     None\n }\n \n // ---------------------------------------------------------------------------\n // Google Scholar\n // ---------------------------------------------------------------------------\n \n async fn try_google_scholar(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {\n-    let title = title?;\n-    let resp = client\n-        .get(\"https://scholar.google.com/scholar\")\n-        .query(&[(\"q\", &format!(\"\\\"{title}\\\"\")), (\"num\", &\"5\".to_string())])\n-        .header(\"User-Agent\", \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\")\n-        .header(\"Accept\", \"text/html\")\n-        .send().await.ok()?;\n-\n-    if !resp.status().is_success() {\n-        return None;\n-    }\n-    let html = resp.text().await.ok()?;\n-\n-    let academic_hosts = [\n-        \".edu\",\n-        \".ac.uk\",\n-        \"research.google\",\n-        \"hal.science\",\n-        \"eprint.iacr.org\",\n-    ];\n-\n-    // Prefer academic hosts\n-    for cap in PDF_HREF_RE.captures_iter(&html) {\n-        let url = &cap[1];\n-        if academic_hosts.iter().any(|h| url.contains(h)) {\n-            return Some(ResolvedPdf {\n-                url: url.into(),\n-                source: \"google_scholar\".into(),\n-                downloadable: true,\n-            });\n-        }\n-    }\n-    // Fallback: any downloadable PDF\n-    for cap in PDF_HREF_RE.captures_iter(&html) {\n-        let url = &cap[1];\n-        if is_downloadable(url) {\n-            return Some(ResolvedPdf {\n-                url: url.into(),\n-                source: \"google_scholar\".into(),\n-                downloadable: true,\n-            });\n-        }\n-    }\n-    None\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // Unpaywall\n // ---------------------------------------------------------------------------\n \n async fn try_unpaywall(client: &reqwest::Client, doi: Option<&str>) -> Option<ResolvedPdf> {\n     let doi = doi?;\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_google_scholar",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 466
+        },
+        "start": {
+          "column": 1,
+          "line": 421
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:422:5: replace try_google_scholar -> Option<ResolvedPdf> with None",
+    "package": "paper-resolver",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 465
+      },
+      "start": {
+        "column": 5,
+        "line": 422
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace try_google_scholar -> Option<ResolvedPdf> with Some(Default::default())\n@@ -414,60 +414,17 @@\n     None\n }\n \n // ---------------------------------------------------------------------------\n // Google Scholar\n // ---------------------------------------------------------------------------\n \n async fn try_google_scholar(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {\n-    let title = title?;\n-    let resp = client\n-        .get(\"https://scholar.google.com/scholar\")\n-        .query(&[(\"q\", &format!(\"\\\"{title}\\\"\")), (\"num\", &\"5\".to_string())])\n-        .header(\"User-Agent\", \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\")\n-        .header(\"Accept\", \"text/html\")\n-        .send().await.ok()?;\n-\n-    if !resp.status().is_success() {\n-        return None;\n-    }\n-    let html = resp.text().await.ok()?;\n-\n-    let academic_hosts = [\n-        \".edu\",\n-        \".ac.uk\",\n-        \"research.google\",\n-        \"hal.science\",\n-        \"eprint.iacr.org\",\n-    ];\n-\n-    // Prefer academic hosts\n-    for cap in PDF_HREF_RE.captures_iter(&html) {\n-        let url = &cap[1];\n-        if academic_hosts.iter().any(|h| url.contains(h)) {\n-            return Some(ResolvedPdf {\n-                url: url.into(),\n-                source: \"google_scholar\".into(),\n-                downloadable: true,\n-            });\n-        }\n-    }\n-    // Fallback: any downloadable PDF\n-    for cap in PDF_HREF_RE.captures_iter(&html) {\n-        let url = &cap[1];\n-        if is_downloadable(url) {\n-            return Some(ResolvedPdf {\n-                url: url.into(),\n-                source: \"google_scholar\".into(),\n-                downloadable: true,\n-            });\n-        }\n-    }\n-    None\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // Unpaywall\n // ---------------------------------------------------------------------------\n \n async fn try_unpaywall(client: &reqwest::Client, doi: Option<&str>) -> Option<ResolvedPdf> {\n     let doi = doi?;\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_google_scholar",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 466
+        },
+        "start": {
+          "column": 1,
+          "line": 421
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:422:5: replace try_google_scholar -> Option<ResolvedPdf> with Some(Default::default())",
+    "package": "paper-resolver",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 465
+      },
+      "start": {
+        "column": 5,
+        "line": 422
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete ! in try_google_scholar\n@@ -422,17 +422,17 @@\n     let title = title?;\n     let resp = client\n         .get(\"https://scholar.google.com/scholar\")\n         .query(&[(\"q\", &format!(\"\\\"{title}\\\"\")), (\"num\", &\"5\".to_string())])\n         .header(\"User-Agent\", \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\")\n         .header(\"Accept\", \"text/html\")\n         .send().await.ok()?;\n \n-    if !resp.status().is_success() {\n+    if  /* ~ changed by cargo-mutants ~ */resp.status().is_success() {\n         return None;\n     }\n     let html = resp.text().await.ok()?;\n \n     let academic_hosts = [\n         \".edu\",\n         \".ac.uk\",\n         \"research.google\",\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_google_scholar",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 466
+        },
+        "start": {
+          "column": 1,
+          "line": 421
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:430:8: delete ! in try_google_scholar",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 430
+      },
+      "start": {
+        "column": 8,
+        "line": 430
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace try_unpaywall -> Option<ResolvedPdf> with None\n@@ -465,53 +465,17 @@\n     None\n }\n \n // ---------------------------------------------------------------------------\n // Unpaywall\n // ---------------------------------------------------------------------------\n \n async fn try_unpaywall(client: &reqwest::Client, doi: Option<&str>) -> Option<ResolvedPdf> {\n-    let doi = doi?;\n-    let resp = client\n-        .get(format!(\"https://api.unpaywall.org/v2/{doi}\"))\n-        .query(&[(\"email\", \"zotero-mcp@example.com\")])\n-        .send()\n-        .await\n-        .ok()?;\n-\n-    if !resp.status().is_success() {\n-        return None;\n-    }\n-    let data: serde_json::Value = resp.json().await.ok()?;\n-\n-    if let Some(url) = data\n-        .pointer(\"/best_oa_location/url_for_pdf\")\n-        .and_then(|v| v.as_str())\n-    {\n-        return Some(ResolvedPdf {\n-            url: url.into(),\n-            source: \"unpaywall\".into(),\n-            downloadable: is_downloadable(url),\n-        });\n-    }\n-    for loc in data\n-        .get(\"oa_locations\")\n-        .and_then(|v| v.as_array())\n-        .unwrap_or(&vec![])\n-    {\n-        if let Some(url) = loc.get(\"url_for_pdf\").and_then(|v| v.as_str()) {\n-            return Some(ResolvedPdf {\n-                url: url.into(),\n-                source: \"unpaywall\".into(),\n-                downloadable: is_downloadable(url),\n-            });\n-        }\n-    }\n-    None\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // Crossref\n // ---------------------------------------------------------------------------\n \n async fn try_crossref(client: &reqwest::Client, doi: Option<&str>) -> Option<ResolvedPdf> {\n     let doi = doi?;\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_unpaywall",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 510
+        },
+        "start": {
+          "column": 1,
+          "line": 472
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:473:5: replace try_unpaywall -> Option<ResolvedPdf> with None",
+    "package": "paper-resolver",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 509
+      },
+      "start": {
+        "column": 5,
+        "line": 473
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace try_unpaywall -> Option<ResolvedPdf> with Some(Default::default())\n@@ -465,53 +465,17 @@\n     None\n }\n \n // ---------------------------------------------------------------------------\n // Unpaywall\n // ---------------------------------------------------------------------------\n \n async fn try_unpaywall(client: &reqwest::Client, doi: Option<&str>) -> Option<ResolvedPdf> {\n-    let doi = doi?;\n-    let resp = client\n-        .get(format!(\"https://api.unpaywall.org/v2/{doi}\"))\n-        .query(&[(\"email\", \"zotero-mcp@example.com\")])\n-        .send()\n-        .await\n-        .ok()?;\n-\n-    if !resp.status().is_success() {\n-        return None;\n-    }\n-    let data: serde_json::Value = resp.json().await.ok()?;\n-\n-    if let Some(url) = data\n-        .pointer(\"/best_oa_location/url_for_pdf\")\n-        .and_then(|v| v.as_str())\n-    {\n-        return Some(ResolvedPdf {\n-            url: url.into(),\n-            source: \"unpaywall\".into(),\n-            downloadable: is_downloadable(url),\n-        });\n-    }\n-    for loc in data\n-        .get(\"oa_locations\")\n-        .and_then(|v| v.as_array())\n-        .unwrap_or(&vec![])\n-    {\n-        if let Some(url) = loc.get(\"url_for_pdf\").and_then(|v| v.as_str()) {\n-            return Some(ResolvedPdf {\n-                url: url.into(),\n-                source: \"unpaywall\".into(),\n-                downloadable: is_downloadable(url),\n-            });\n-        }\n-    }\n-    None\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // Crossref\n // ---------------------------------------------------------------------------\n \n async fn try_crossref(client: &reqwest::Client, doi: Option<&str>) -> Option<ResolvedPdf> {\n     let doi = doi?;\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_unpaywall",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 510
+        },
+        "start": {
+          "column": 1,
+          "line": 472
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:473:5: replace try_unpaywall -> Option<ResolvedPdf> with Some(Default::default())",
+    "package": "paper-resolver",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 509
+      },
+      "start": {
+        "column": 5,
+        "line": 473
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete ! in try_unpaywall\n@@ -473,17 +473,17 @@\n     let doi = doi?;\n     let resp = client\n         .get(format!(\"https://api.unpaywall.org/v2/{doi}\"))\n         .query(&[(\"email\", \"zotero-mcp@example.com\")])\n         .send()\n         .await\n         .ok()?;\n \n-    if !resp.status().is_success() {\n+    if  /* ~ changed by cargo-mutants ~ */resp.status().is_success() {\n         return None;\n     }\n     let data: serde_json::Value = resp.json().await.ok()?;\n \n     if let Some(url) = data\n         .pointer(\"/best_oa_location/url_for_pdf\")\n         .and_then(|v| v.as_str())\n     {\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_unpaywall",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 510
+        },
+        "start": {
+          "column": 1,
+          "line": 472
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:481:8: delete ! in try_unpaywall",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 481
+      },
+      "start": {
+        "column": 8,
+        "line": 481
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace try_crossref -> Option<ResolvedPdf> with None\n@@ -509,66 +509,17 @@\n     None\n }\n \n // ---------------------------------------------------------------------------\n // Crossref\n // ---------------------------------------------------------------------------\n \n async fn try_crossref(client: &reqwest::Client, doi: Option<&str>) -> Option<ResolvedPdf> {\n-    let doi = doi?;\n-    let resp = client\n-        .get(format!(\"https://api.crossref.org/works/{doi}\"))\n-        .header(\n-            \"User-Agent\",\n-            \"ZoteroMCP/0.1 (mailto:zotero-mcp@example.com)\",\n-        )\n-        .send()\n-        .await\n-        .ok()?;\n-\n-    if !resp.status().is_success() {\n-        return None;\n-    }\n-    let data: serde_json::Value = resp.json().await.ok()?;\n-    let msg = data.get(\"message\")?;\n-\n-    // Check resource.primary.URL\n-    if let Some(url) = msg\n-        .pointer(\"/resource/primary/URL\")\n-        .and_then(|v| v.as_str())\n-        && url.to_lowercase().ends_with(\".pdf\")\n-    {\n-        return Some(ResolvedPdf {\n-            url: url.into(),\n-            source: \"crossref\".into(),\n-            downloadable: is_downloadable(url),\n-        });\n-    }\n-    // Check link[] array\n-    for link in msg\n-        .get(\"link\")\n-        .and_then(|v| v.as_array())\n-        .unwrap_or(&vec![])\n-    {\n-        let ct = link\n-            .get(\"content-type\")\n-            .and_then(|v| v.as_str())\n-            .unwrap_or(\"\");\n-        if ct.contains(\"pdf\")\n-            && let Some(url) = link.get(\"URL\").and_then(|v| v.as_str())\n-        {\n-            return Some(ResolvedPdf {\n-                url: url.into(),\n-                source: \"crossref\".into(),\n-                downloadable: is_downloadable(url),\n-            });\n-        }\n-    }\n-    None\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // Zenodo\n // ---------------------------------------------------------------------------\n \n async fn try_zenodo(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {\n     let title = title?;\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_crossref",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 567
+        },
+        "start": {
+          "column": 1,
+          "line": 516
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:517:5: replace try_crossref -> Option<ResolvedPdf> with None",
+    "package": "paper-resolver",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 566
+      },
+      "start": {
+        "column": 5,
+        "line": 517
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace try_crossref -> Option<ResolvedPdf> with Some(Default::default())\n@@ -509,66 +509,17 @@\n     None\n }\n \n // ---------------------------------------------------------------------------\n // Crossref\n // ---------------------------------------------------------------------------\n \n async fn try_crossref(client: &reqwest::Client, doi: Option<&str>) -> Option<ResolvedPdf> {\n-    let doi = doi?;\n-    let resp = client\n-        .get(format!(\"https://api.crossref.org/works/{doi}\"))\n-        .header(\n-            \"User-Agent\",\n-            \"ZoteroMCP/0.1 (mailto:zotero-mcp@example.com)\",\n-        )\n-        .send()\n-        .await\n-        .ok()?;\n-\n-    if !resp.status().is_success() {\n-        return None;\n-    }\n-    let data: serde_json::Value = resp.json().await.ok()?;\n-    let msg = data.get(\"message\")?;\n-\n-    // Check resource.primary.URL\n-    if let Some(url) = msg\n-        .pointer(\"/resource/primary/URL\")\n-        .and_then(|v| v.as_str())\n-        && url.to_lowercase().ends_with(\".pdf\")\n-    {\n-        return Some(ResolvedPdf {\n-            url: url.into(),\n-            source: \"crossref\".into(),\n-            downloadable: is_downloadable(url),\n-        });\n-    }\n-    // Check link[] array\n-    for link in msg\n-        .get(\"link\")\n-        .and_then(|v| v.as_array())\n-        .unwrap_or(&vec![])\n-    {\n-        let ct = link\n-            .get(\"content-type\")\n-            .and_then(|v| v.as_str())\n-            .unwrap_or(\"\");\n-        if ct.contains(\"pdf\")\n-            && let Some(url) = link.get(\"URL\").and_then(|v| v.as_str())\n-        {\n-            return Some(ResolvedPdf {\n-                url: url.into(),\n-                source: \"crossref\".into(),\n-                downloadable: is_downloadable(url),\n-            });\n-        }\n-    }\n-    None\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // Zenodo\n // ---------------------------------------------------------------------------\n \n async fn try_zenodo(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {\n     let title = title?;\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_crossref",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 567
+        },
+        "start": {
+          "column": 1,
+          "line": 516
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:517:5: replace try_crossref -> Option<ResolvedPdf> with Some(Default::default())",
+    "package": "paper-resolver",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 566
+      },
+      "start": {
+        "column": 5,
+        "line": 517
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete ! in try_crossref\n@@ -520,17 +520,17 @@\n         .header(\n             \"User-Agent\",\n             \"ZoteroMCP/0.1 (mailto:zotero-mcp@example.com)\",\n         )\n         .send()\n         .await\n         .ok()?;\n \n-    if !resp.status().is_success() {\n+    if  /* ~ changed by cargo-mutants ~ */resp.status().is_success() {\n         return None;\n     }\n     let data: serde_json::Value = resp.json().await.ok()?;\n     let msg = data.get(\"message\")?;\n \n     // Check resource.primary.URL\n     if let Some(url) = msg\n         .pointer(\"/resource/primary/URL\")\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_crossref",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 567
+        },
+        "start": {
+          "column": 1,
+          "line": 516
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:528:8: delete ! in try_crossref",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 528
+      },
+      "start": {
+        "column": 8,
+        "line": 528
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace && with || in try_crossref\n@@ -530,17 +530,17 @@\n     }\n     let data: serde_json::Value = resp.json().await.ok()?;\n     let msg = data.get(\"message\")?;\n \n     // Check resource.primary.URL\n     if let Some(url) = msg\n         .pointer(\"/resource/primary/URL\")\n         .and_then(|v| v.as_str())\n-        && url.to_lowercase().ends_with(\".pdf\")\n+        || /* ~ changed by cargo-mutants ~ */ url.to_lowercase().ends_with(\".pdf\")\n     {\n         return Some(ResolvedPdf {\n             url: url.into(),\n             source: \"crossref\".into(),\n             downloadable: is_downloadable(url),\n         });\n     }\n     // Check link[] array\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_crossref",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 567
+        },
+        "start": {
+          "column": 1,
+          "line": 516
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:538:9: replace && with || in try_crossref",
+    "package": "paper-resolver",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 538
+      },
+      "start": {
+        "column": 9,
+        "line": 538
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace && with || in try_crossref\n@@ -549,17 +549,17 @@\n         .and_then(|v| v.as_array())\n         .unwrap_or(&vec![])\n     {\n         let ct = link\n             .get(\"content-type\")\n             .and_then(|v| v.as_str())\n             .unwrap_or(\"\");\n         if ct.contains(\"pdf\")\n-            && let Some(url) = link.get(\"URL\").and_then(|v| v.as_str())\n+            || /* ~ changed by cargo-mutants ~ */ let Some(url) = link.get(\"URL\").and_then(|v| v.as_str())\n         {\n             return Some(ResolvedPdf {\n                 url: url.into(),\n                 source: \"crossref\".into(),\n                 downloadable: is_downloadable(url),\n             });\n         }\n     }\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_crossref",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 567
+        },
+        "start": {
+          "column": 1,
+          "line": 516
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:557:13: replace && with || in try_crossref",
+    "package": "paper-resolver",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 15,
+        "line": 557
+      },
+      "start": {
+        "column": 13,
+        "line": 557
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace try_zenodo -> Option<ResolvedPdf> with None\n@@ -566,56 +566,17 @@\n     None\n }\n \n // ---------------------------------------------------------------------------\n // Zenodo\n // ---------------------------------------------------------------------------\n \n async fn try_zenodo(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {\n-    let title = title?;\n-    let resp = client\n-        .get(\"https://zenodo.org/api/records\")\n-        .query(&[(\"q\", title), (\"size\", \"3\"), (\"type\", \"publication\")])\n-        .send()\n-        .await\n-        .ok()?;\n-\n-    if !resp.status().is_success() {\n-        return None;\n-    }\n-    let data: serde_json::Value = resp.json().await.ok()?;\n-\n-    for hit in data\n-        .pointer(\"/hits/hits\")\n-        .and_then(|v| v.as_array())\n-        .unwrap_or(&vec![])\n-    {\n-        for file in hit\n-            .get(\"files\")\n-            .and_then(|v| v.as_array())\n-            .unwrap_or(&vec![])\n-        {\n-            if file\n-                .get(\"key\")\n-                .and_then(|v| v.as_str())\n-                .unwrap_or(\"\")\n-                .to_lowercase()\n-                .ends_with(\".pdf\")\n-                && let Some(url) = file.pointer(\"/links/self\").and_then(|v| v.as_str())\n-            {\n-                return Some(ResolvedPdf {\n-                    url: url.into(),\n-                    source: \"zenodo\".into(),\n-                    downloadable: true,\n-                });\n-            }\n-        }\n-    }\n-    None\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // SSRN\n // ---------------------------------------------------------------------------\n \n async fn try_ssrn(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {\n     let title = title?;\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_zenodo",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 614
+        },
+        "start": {
+          "column": 1,
+          "line": 573
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:574:5: replace try_zenodo -> Option<ResolvedPdf> with None",
+    "package": "paper-resolver",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 613
+      },
+      "start": {
+        "column": 5,
+        "line": 574
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace try_zenodo -> Option<ResolvedPdf> with Some(Default::default())\n@@ -566,56 +566,17 @@\n     None\n }\n \n // ---------------------------------------------------------------------------\n // Zenodo\n // ---------------------------------------------------------------------------\n \n async fn try_zenodo(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {\n-    let title = title?;\n-    let resp = client\n-        .get(\"https://zenodo.org/api/records\")\n-        .query(&[(\"q\", title), (\"size\", \"3\"), (\"type\", \"publication\")])\n-        .send()\n-        .await\n-        .ok()?;\n-\n-    if !resp.status().is_success() {\n-        return None;\n-    }\n-    let data: serde_json::Value = resp.json().await.ok()?;\n-\n-    for hit in data\n-        .pointer(\"/hits/hits\")\n-        .and_then(|v| v.as_array())\n-        .unwrap_or(&vec![])\n-    {\n-        for file in hit\n-            .get(\"files\")\n-            .and_then(|v| v.as_array())\n-            .unwrap_or(&vec![])\n-        {\n-            if file\n-                .get(\"key\")\n-                .and_then(|v| v.as_str())\n-                .unwrap_or(\"\")\n-                .to_lowercase()\n-                .ends_with(\".pdf\")\n-                && let Some(url) = file.pointer(\"/links/self\").and_then(|v| v.as_str())\n-            {\n-                return Some(ResolvedPdf {\n-                    url: url.into(),\n-                    source: \"zenodo\".into(),\n-                    downloadable: true,\n-                });\n-            }\n-        }\n-    }\n-    None\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // SSRN\n // ---------------------------------------------------------------------------\n \n async fn try_ssrn(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {\n     let title = title?;\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_zenodo",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 614
+        },
+        "start": {
+          "column": 1,
+          "line": 573
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:574:5: replace try_zenodo -> Option<ResolvedPdf> with Some(Default::default())",
+    "package": "paper-resolver",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 613
+      },
+      "start": {
+        "column": 5,
+        "line": 574
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete ! in try_zenodo\n@@ -574,17 +574,17 @@\n     let title = title?;\n     let resp = client\n         .get(\"https://zenodo.org/api/records\")\n         .query(&[(\"q\", title), (\"size\", \"3\"), (\"type\", \"publication\")])\n         .send()\n         .await\n         .ok()?;\n \n-    if !resp.status().is_success() {\n+    if  /* ~ changed by cargo-mutants ~ */resp.status().is_success() {\n         return None;\n     }\n     let data: serde_json::Value = resp.json().await.ok()?;\n \n     for hit in data\n         .pointer(\"/hits/hits\")\n         .and_then(|v| v.as_array())\n         .unwrap_or(&vec![])\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_zenodo",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 614
+        },
+        "start": {
+          "column": 1,
+          "line": 573
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:582:8: delete ! in try_zenodo",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 582
+      },
+      "start": {
+        "column": 8,
+        "line": 582
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace && with || in try_zenodo\n@@ -595,17 +595,17 @@\n             .unwrap_or(&vec![])\n         {\n             if file\n                 .get(\"key\")\n                 .and_then(|v| v.as_str())\n                 .unwrap_or(\"\")\n                 .to_lowercase()\n                 .ends_with(\".pdf\")\n-                && let Some(url) = file.pointer(\"/links/self\").and_then(|v| v.as_str())\n+                || /* ~ changed by cargo-mutants ~ */ let Some(url) = file.pointer(\"/links/self\").and_then(|v| v.as_str())\n             {\n                 return Some(ResolvedPdf {\n                     url: url.into(),\n                     source: \"zenodo\".into(),\n                     downloadable: true,\n                 });\n             }\n         }\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_zenodo",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 614
+        },
+        "start": {
+          "column": 1,
+          "line": 573
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:603:17: replace && with || in try_zenodo",
+    "package": "paper-resolver",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 19,
+        "line": 603
+      },
+      "start": {
+        "column": 17,
+        "line": 603
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace try_ssrn -> Option<ResolvedPdf> with None\n@@ -613,39 +613,17 @@\n     None\n }\n \n // ---------------------------------------------------------------------------\n // SSRN\n // ---------------------------------------------------------------------------\n \n async fn try_ssrn(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {\n-    let title = title?;\n-    let resp = client\n-        .get(\"https://papers.ssrn.com/sol3/results.cfm\")\n-        .query(&[(\"txtKey_Words\", title), (\"npage\", \"1\")])\n-        .header(\"User-Agent\", \"Mozilla/5.0\")\n-        .header(\"Accept\", \"text/html\")\n-        .send()\n-        .await\n-        .ok()?;\n-\n-    if !resp.status().is_success() {\n-        return None;\n-    }\n-    let html = resp.text().await.ok()?;\n-\n-    if let Some(cap) = SSRN_RE.captures(&html) {\n-        return Some(ResolvedPdf {\n-            url: cap[1].to_string(),\n-            source: \"ssrn\".into(),\n-            downloadable: false,\n-        });\n-    }\n-    None\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // Semantic Scholar\n // ---------------------------------------------------------------------------\n \n async fn try_semantic_scholar(\n     client: &reqwest::Client,\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_ssrn",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 644
+        },
+        "start": {
+          "column": 1,
+          "line": 620
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:621:5: replace try_ssrn -> Option<ResolvedPdf> with None",
+    "package": "paper-resolver",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 643
+      },
+      "start": {
+        "column": 5,
+        "line": 621
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace try_ssrn -> Option<ResolvedPdf> with Some(Default::default())\n@@ -613,39 +613,17 @@\n     None\n }\n \n // ---------------------------------------------------------------------------\n // SSRN\n // ---------------------------------------------------------------------------\n \n async fn try_ssrn(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {\n-    let title = title?;\n-    let resp = client\n-        .get(\"https://papers.ssrn.com/sol3/results.cfm\")\n-        .query(&[(\"txtKey_Words\", title), (\"npage\", \"1\")])\n-        .header(\"User-Agent\", \"Mozilla/5.0\")\n-        .header(\"Accept\", \"text/html\")\n-        .send()\n-        .await\n-        .ok()?;\n-\n-    if !resp.status().is_success() {\n-        return None;\n-    }\n-    let html = resp.text().await.ok()?;\n-\n-    if let Some(cap) = SSRN_RE.captures(&html) {\n-        return Some(ResolvedPdf {\n-            url: cap[1].to_string(),\n-            source: \"ssrn\".into(),\n-            downloadable: false,\n-        });\n-    }\n-    None\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------------------\n // Semantic Scholar\n // ---------------------------------------------------------------------------\n \n async fn try_semantic_scholar(\n     client: &reqwest::Client,\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_ssrn",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 644
+        },
+        "start": {
+          "column": 1,
+          "line": 620
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:621:5: replace try_ssrn -> Option<ResolvedPdf> with Some(Default::default())",
+    "package": "paper-resolver",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 643
+      },
+      "start": {
+        "column": 5,
+        "line": 621
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete ! in try_ssrn\n@@ -623,17 +623,17 @@\n         .get(\"https://papers.ssrn.com/sol3/results.cfm\")\n         .query(&[(\"txtKey_Words\", title), (\"npage\", \"1\")])\n         .header(\"User-Agent\", \"Mozilla/5.0\")\n         .header(\"Accept\", \"text/html\")\n         .send()\n         .await\n         .ok()?;\n \n-    if !resp.status().is_success() {\n+    if  /* ~ changed by cargo-mutants ~ */resp.status().is_success() {\n         return None;\n     }\n     let html = resp.text().await.ok()?;\n \n     if let Some(cap) = SSRN_RE.captures(&html) {\n         return Some(ResolvedPdf {\n             url: cap[1].to_string(),\n             source: \"ssrn\".into(),\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_ssrn",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 644
+        },
+        "start": {
+          "column": 1,
+          "line": 620
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:631:8: delete ! in try_ssrn",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 631
+      },
+      "start": {
+        "column": 8,
+        "line": 631
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace try_semantic_scholar -> Option<ResolvedPdf> with None\n@@ -647,80 +647,17 @@\n // Semantic Scholar\n // ---------------------------------------------------------------------------\n \n async fn try_semantic_scholar(\n     client: &reqwest::Client,\n     doi: Option<&str>,\n     title: Option<&str>,\n ) -> Option<ResolvedPdf> {\n-    let resp = if let Some(doi) = doi {\n-        client\n-            .get(format!(\n-                \"https://api.semanticscholar.org/graph/v1/paper/DOI:{doi}\"\n-            ))\n-            .query(&[(\"fields\", \"openAccessPdf\")])\n-            .send()\n-            .await\n-            .ok()?\n-    } else {\n-        let title = title?;\n-        client\n-            .get(\"https://api.semanticscholar.org/graph/v1/paper/search\")\n-            .query(&[\n-                (\"query\", title),\n-                (\"limit\", \"1\"),\n-                (\"fields\", \"openAccessPdf\"),\n-            ])\n-            .send()\n-            .await\n-            .ok()?\n-    };\n-\n-    if !resp.status().is_success() {\n-        return None;\n-    }\n-    let data: serde_json::Value = resp.json().await.ok()?;\n-\n-    let work = if let Some(items) = data.get(\"data\").and_then(|v| v.as_array()) {\n-        items.first()?\n-    } else {\n-        &data\n-    };\n-\n-    let oa = work.get(\"openAccessPdf\")?;\n-    if let Some(url) = oa.get(\"url\").and_then(|v| v.as_str()) {\n-        return Some(ResolvedPdf {\n-            url: url.into(),\n-            source: \"semantic_scholar\".into(),\n-            downloadable: is_downloadable(url),\n-        });\n-    }\n-    // Disclaimer fallback\n-    if let Some(disclaimer) = oa.get(\"disclaimer\").and_then(|v| v.as_str()) {\n-        for m in URL_RE.find_iter(disclaimer) {\n-            let url = m.as_str();\n-            if url.contains(\"arxiv.org/abs/\") {\n-                let pdf_url = url.replace(\"/abs/\", \"/pdf/\");\n-                return Some(ResolvedPdf {\n-                    url: format!(\"{pdf_url}.pdf\"),\n-                    source: \"semantic_scholar\".into(),\n-                    downloadable: true,\n-                });\n-            }\n-            if !url.contains(\"arxiv.org\") || url.contains(\"/pdf/\") {\n-                return Some(ResolvedPdf {\n-                    url: url.into(),\n-                    source: \"semantic_scholar\".into(),\n-                    downloadable: is_downloadable(url),\n-                });\n-            }\n-        }\n-    }\n-    None\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn doi_to_arxiv_id_valid() {\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_semantic_scholar",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 719
+        },
+        "start": {
+          "column": 1,
+          "line": 650
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:655:5: replace try_semantic_scholar -> Option<ResolvedPdf> with None",
+    "package": "paper-resolver",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 718
+      },
+      "start": {
+        "column": 5,
+        "line": 655
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace try_semantic_scholar -> Option<ResolvedPdf> with Some(Default::default())\n@@ -647,80 +647,17 @@\n // Semantic Scholar\n // ---------------------------------------------------------------------------\n \n async fn try_semantic_scholar(\n     client: &reqwest::Client,\n     doi: Option<&str>,\n     title: Option<&str>,\n ) -> Option<ResolvedPdf> {\n-    let resp = if let Some(doi) = doi {\n-        client\n-            .get(format!(\n-                \"https://api.semanticscholar.org/graph/v1/paper/DOI:{doi}\"\n-            ))\n-            .query(&[(\"fields\", \"openAccessPdf\")])\n-            .send()\n-            .await\n-            .ok()?\n-    } else {\n-        let title = title?;\n-        client\n-            .get(\"https://api.semanticscholar.org/graph/v1/paper/search\")\n-            .query(&[\n-                (\"query\", title),\n-                (\"limit\", \"1\"),\n-                (\"fields\", \"openAccessPdf\"),\n-            ])\n-            .send()\n-            .await\n-            .ok()?\n-    };\n-\n-    if !resp.status().is_success() {\n-        return None;\n-    }\n-    let data: serde_json::Value = resp.json().await.ok()?;\n-\n-    let work = if let Some(items) = data.get(\"data\").and_then(|v| v.as_array()) {\n-        items.first()?\n-    } else {\n-        &data\n-    };\n-\n-    let oa = work.get(\"openAccessPdf\")?;\n-    if let Some(url) = oa.get(\"url\").and_then(|v| v.as_str()) {\n-        return Some(ResolvedPdf {\n-            url: url.into(),\n-            source: \"semantic_scholar\".into(),\n-            downloadable: is_downloadable(url),\n-        });\n-    }\n-    // Disclaimer fallback\n-    if let Some(disclaimer) = oa.get(\"disclaimer\").and_then(|v| v.as_str()) {\n-        for m in URL_RE.find_iter(disclaimer) {\n-            let url = m.as_str();\n-            if url.contains(\"arxiv.org/abs/\") {\n-                let pdf_url = url.replace(\"/abs/\", \"/pdf/\");\n-                return Some(ResolvedPdf {\n-                    url: format!(\"{pdf_url}.pdf\"),\n-                    source: \"semantic_scholar\".into(),\n-                    downloadable: true,\n-                });\n-            }\n-            if !url.contains(\"arxiv.org\") || url.contains(\"/pdf/\") {\n-                return Some(ResolvedPdf {\n-                    url: url.into(),\n-                    source: \"semantic_scholar\".into(),\n-                    downloadable: is_downloadable(url),\n-                });\n-            }\n-        }\n-    }\n-    None\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn doi_to_arxiv_id_valid() {\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_semantic_scholar",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 719
+        },
+        "start": {
+          "column": 1,
+          "line": 650
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/paper-resolver/src/lib.rs:655:5: replace try_semantic_scholar -> Option<ResolvedPdf> with Some(Default::default())",
+    "package": "paper-resolver",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 718
+      },
+      "start": {
+        "column": 5,
+        "line": 655
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete ! in try_semantic_scholar\n@@ -670,17 +670,17 @@\n                 (\"limit\", \"1\"),\n                 (\"fields\", \"openAccessPdf\"),\n             ])\n             .send()\n             .await\n             .ok()?\n     };\n \n-    if !resp.status().is_success() {\n+    if  /* ~ changed by cargo-mutants ~ */resp.status().is_success() {\n         return None;\n     }\n     let data: serde_json::Value = resp.json().await.ok()?;\n \n     let work = if let Some(items) = data.get(\"data\").and_then(|v| v.as_array()) {\n         items.first()?\n     } else {\n         &data\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_semantic_scholar",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 719
+        },
+        "start": {
+          "column": 1,
+          "line": 650
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:678:8: delete ! in try_semantic_scholar",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 678
+      },
+      "start": {
+        "column": 8,
+        "line": 678
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ replace || with && in try_semantic_scholar\n@@ -701,17 +701,17 @@\n             if url.contains(\"arxiv.org/abs/\") {\n                 let pdf_url = url.replace(\"/abs/\", \"/pdf/\");\n                 return Some(ResolvedPdf {\n                     url: format!(\"{pdf_url}.pdf\"),\n                     source: \"semantic_scholar\".into(),\n                     downloadable: true,\n                 });\n             }\n-            if !url.contains(\"arxiv.org\") || url.contains(\"/pdf/\") {\n+            if !url.contains(\"arxiv.org\") && /* ~ changed by cargo-mutants ~ */ url.contains(\"/pdf/\") {\n                 return Some(ResolvedPdf {\n                     url: url.into(),\n                     source: \"semantic_scholar\".into(),\n                     downloadable: is_downloadable(url),\n                 });\n             }\n         }\n     }\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_semantic_scholar",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 719
+        },
+        "start": {
+          "column": 1,
+          "line": 650
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:709:43: replace || with && in try_semantic_scholar",
+    "package": "paper-resolver",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 45,
+        "line": 709
+      },
+      "start": {
+        "column": 43,
+        "line": 709
+      }
+    }
+  },
+  {
+    "diff": "--- crates/paper-resolver/src/lib.rs\n+++ delete ! in try_semantic_scholar\n@@ -701,17 +701,17 @@\n             if url.contains(\"arxiv.org/abs/\") {\n                 let pdf_url = url.replace(\"/abs/\", \"/pdf/\");\n                 return Some(ResolvedPdf {\n                     url: format!(\"{pdf_url}.pdf\"),\n                     source: \"semantic_scholar\".into(),\n                     downloadable: true,\n                 });\n             }\n-            if !url.contains(\"arxiv.org\") || url.contains(\"/pdf/\") {\n+            if  /* ~ changed by cargo-mutants ~ */url.contains(\"arxiv.org\") || url.contains(\"/pdf/\") {\n                 return Some(ResolvedPdf {\n                     url: url.into(),\n                     source: \"semantic_scholar\".into(),\n                     downloadable: is_downloadable(url),\n                 });\n             }\n         }\n     }\n",
+    "file": "crates/paper-resolver/src/lib.rs",
+    "function": {
+      "function_name": "try_semantic_scholar",
+      "return_type": "-> Option<ResolvedPdf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 719
+        },
+        "start": {
+          "column": 1,
+          "line": 650
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/paper-resolver/src/lib.rs:709:16: delete ! in try_semantic_scholar",
+    "package": "paper-resolver",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 709
+      },
+      "start": {
+        "column": 16,
+        "line": 709
+      }
+    }
+  }
+]

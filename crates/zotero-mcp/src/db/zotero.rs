@@ -89,6 +89,12 @@ impl ZoteroDb {
         &self.conn
     }
 
+    /// Create from an existing connection (for testing with in-memory DBs).
+    #[cfg(test)]
+    pub(crate) fn from_connection(conn: Connection) -> Self {
+        Self { conn }
+    }
+
     /// Open the Zotero database in read-only mode.
     pub fn open(path: &Path) -> Result<Self> {
         let uri = format!("file:{}?mode=ro", path.display());

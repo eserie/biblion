@@ -20,6 +20,8 @@ mod db;
 mod protocol;
 mod server;
 mod sse;
+#[cfg(test)]
+mod test_helpers;
 mod tools;
 
 use anyhow::Result;

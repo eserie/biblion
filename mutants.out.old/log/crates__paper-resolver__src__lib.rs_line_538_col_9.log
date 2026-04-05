@@ -1,0 +1,159 @@
+
+*** crates/paper-resolver/src/lib.rs:538:9: replace && with || in try_crossref
+
+*** mutation diff:
+--- crates/paper-resolver/src/lib.rs
++++ replace && with || in try_crossref
+@@ -530,17 +530,17 @@
+     }
+     let data: serde_json::Value = resp.json().await.ok()?;
+     let msg = data.get("message")?;
+ 
+     // Check resource.primary.URL
+     if let Some(url) = msg
+         .pointer("/resource/primary/URL")
+         .and_then(|v| v.as_str())
+-        && url.to_lowercase().ends_with(".pdf")
++        || /* ~ changed by cargo-mutants ~ */ url.to_lowercase().ends_with(".pdf")
+     {
+         return Some(ResolvedPdf {
+             url: url.into(),
+             source: "crossref".into(),
+             downloadable: is_downloadable(url),
+         });
+     }
+     // Check link[] array
+
+
+*** /opt/homebrew/bin/cargo test --no-run --verbose --package=paper-resolver@0.1.0
+       Fresh unicode-ident v1.0.24
+       Fresh pin-project-lite v0.2.17
+       Fresh stable_deref_trait v1.2.1
+       Fresh futures-core v0.3.32
+       Fresh bytes v1.11.1
+       Fresh memchr v2.8.0
+       Fresh futures-sink v0.3.32
+       Fresh itoa v1.0.18
+       Fresh core-foundation-sys v0.8.7
+       Fresh slab v0.4.12
+       Fresh once_cell v1.21.4
+       Fresh bitflags v2.11.0
+       Fresh smallvec v1.15.1
+       Fresh futures-io v0.3.32
+       Fresh proc-macro2 v1.0.106
+       Fresh futures-channel v0.3.32
+       Fresh http v1.4.0
+       Fresh litemap v0.8.2
+       Fresh futures-task v0.3.32
+       Fresh writeable v0.6.3
+       Fresh utf8_iter v1.0.4
+       Fresh cfg-if v1.0.4
+       Fresh tracing-core v0.1.36
+       Fresh hashbrown v0.16.1
+       Fresh equivalent v1.0.2
+       Fresh quote v1.0.45
+       Fresh libc v0.2.184
+       Fresh http-body v1.0.1
+       Fresh percent-encoding v2.3.2
+       Fresh tracing v0.1.44
+       Fresh indexmap v2.13.1
+       Fresh fnv v1.0.7
+       Fresh atomic-waker v1.1.2
+       Fresh fastrand v2.4.0
+       Fresh tower-service v0.3.3
+       Fresh syn v2.0.117
+       Fresh socket2 v0.6.3
+       Fresh mio v1.2.0
+       Fresh errno v0.3.14
+       Fresh security-framework-sys v2.17.0
+       Fresh core-foundation v0.10.1
+       Fresh icu_normalizer_data v2.2.0
+       Fresh icu_properties_data v2.2.0
+       Fresh getrandom v0.4.2
+       Fresh try-lock v0.2.5
+       Fresh core-foundation v0.9.4
+       Fresh synstructure v0.13.2
+       Fresh zerovec-derive v0.11.3
+       Fresh displaydoc v0.2.5
+       Fresh tokio-macros v2.7.0
+       Fresh futures-macro v0.3.32
+       Fresh rustix v1.1.4
+       Fresh system-configuration-sys v0.6.0
+       Fresh httparse v1.10.1
+       Fresh want v0.3.1
+       Fresh serde_core v1.0.228
+       Fresh security-framework v3.7.0
+       Fresh form_urlencoded v1.2.2
+       Fresh sync_wrapper v1.0.2
+       Fresh tower-layer v0.3.3
+       Fresh zerofrom-derive v0.1.7
+       Fresh yoke-derive v0.8.2
+       Fresh tokio v1.51.0
+       Fresh futures-util v0.3.32
+       Fresh tempfile v3.27.0
+       Fresh system-configuration v0.7.0
+       Fresh base64 v0.22.1
+       Fresh ipnet v2.12.0
+       Fresh serde v1.0.228
+       Fresh zmij v1.0.21
+       Fresh http-body-util v0.1.3
+       Fresh aho-corasick v1.1.4
+       Fresh regex-syntax v0.8.10
+       Fresh zeroize v1.8.2
+       Fresh iri-string v0.7.12
+       Fresh ryu v1.0.23
+       Fresh zerofrom v0.1.7
+       Fresh tokio-util v0.7.18
+       Fresh native-tls v0.2.18
+       Fresh tower v0.5.3
+       Fresh regex-automata v0.4.14
+       Fresh serde_urlencoded v0.7.1
+       Fresh futures-executor v0.3.32
+       Fresh rustls-pki-types v1.14.0
+       Fresh encoding_rs v0.8.35
+       Fresh log v0.4.29
+       Fresh mime v0.3.17
+       Fresh yoke v0.8.2
+       Fresh h2 v0.4.13
+       Fresh tokio-native-tls v0.3.1
+       Fresh serde_json v1.0.149
+       Fresh tower-http v0.6.8
+       Fresh regex v1.12.3
+       Fresh futures v0.3.32
+       Fresh zerovec v0.11.6
+       Fresh zerotrie v0.2.4
+       Fresh hyper v1.9.0
+       Fresh tinystr v0.8.3
+       Fresh potential_utf v0.1.5
+       Fresh hyper-util v0.1.20
+       Fresh icu_locale_core v2.2.0
+       Fresh icu_collections v2.2.0
+       Fresh hyper-tls v0.6.0
+       Fresh icu_provider v2.2.0
+       Fresh icu_properties v2.2.0
+       Fresh icu_normalizer v2.2.0
+       Fresh idna_adapter v1.2.1
+       Fresh idna v1.1.0
+       Fresh url v2.5.8
+       Fresh reqwest v0.12.28
+       Dirty paper-resolver v0.1.0 (/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/crates/paper-resolver): the file `crates/paper-resolver/src/lib.rs` has changed (1775353215.597912942s, 20s after last build at 1775353195.119624635s)
+   Compiling paper-resolver v0.1.0 (/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/crates/paper-resolver)
+     Running `rustc --crate-name paper_resolver --edition=2024 crates/paper-resolver/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=920dbdbbaeb4edd4 -C extra-filename=-3c56aee853e66fad --out-dir /private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps -C incremental=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/incremental -L dependency=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps --extern futures=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libfutures-e2cbeadf437e8327.rlib --extern regex=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libregex-e6606eaec6fe6562.rlib --extern reqwest=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libreqwest-be5a2fe52e749ca0.rlib --extern serde_json=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libserde_json-689ffc4c52c6dfaf.rlib --extern tokio=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libtokio-2f6eceee206eaa79.rlib`
+     Running `rustc --crate-name paper_resolver --edition=2024 crates/paper-resolver/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=bbf548dde3973517 -C extra-filename=-b5ad32912301661b --out-dir /private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps -C incremental=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/incremental -L dependency=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps --extern futures=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libfutures-e2cbeadf437e8327.rmeta --extern regex=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libregex-e6606eaec6fe6562.rmeta --extern reqwest=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libreqwest-be5a2fe52e749ca0.rmeta --extern serde_json=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libserde_json-689ffc4c52c6dfaf.rmeta --extern tokio=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libtokio-2f6eceee206eaa79.rmeta`
+error: `||` operators are not supported in let chain conditions
+   --> crates/paper-resolver/src/lib.rs:538:9
+    |
+538 |         || /* ~ changed by cargo-mutants ~ */ url.to_lowercase().ends_with(".pdf")
+    |         ^^
+
+error: could not compile `paper-resolver` (lib) due to 1 previous error
+
+Caused by:
+  process didn't exit successfully: `rustc --crate-name paper_resolver --edition=2024 crates/paper-resolver/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=bbf548dde3973517 -C extra-filename=-b5ad32912301661b --out-dir /private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps -C incremental=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/incremental -L dependency=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps --extern futures=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libfutures-e2cbeadf437e8327.rmeta --extern regex=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libregex-e6606eaec6fe6562.rmeta --extern reqwest=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libreqwest-be5a2fe52e749ca0.rmeta --extern serde_json=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libserde_json-689ffc4c52c6dfaf.rmeta --extern tokio=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libtokio-2f6eceee206eaa79.rmeta` (exit status: 1)
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `paper-resolver` (lib test) due to 1 previous error
+
+Caused by:
+  process didn't exit successfully: `rustc --crate-name paper_resolver --edition=2024 crates/paper-resolver/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --emit=dep-info,link -C embed-bitcode=no -C debuginfo=2 -C split-debuginfo=unpacked --test --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values())' -C metadata=920dbdbbaeb4edd4 -C extra-filename=-3c56aee853e66fad --out-dir /private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps -C incremental=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/incremental -L dependency=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps --extern futures=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libfutures-e2cbeadf437e8327.rlib --extern regex=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libregex-e6606eaec6fe6562.rlib --extern reqwest=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libreqwest-be5a2fe52e749ca0.rlib --extern serde_json=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libserde_json-689ffc4c52c6dfaf.rlib --extern tokio=/private/var/folders/_f/yp39_pl932l59d2ckz60rnq00000gn/T/cargo-mutants-zotero-mcp-rs-snY5Vx.tmp/target/debug/deps/libtokio-2f6eceee206eaa79.rlib` (exit status: 1)
+
+*** result: Failure(101)

@@ -1,0 +1,21 @@
+--- crates/paper-resolver/src/lib.rs
++++ delete ! in is_downloadable
+@@ -164,17 +164,17 @@
+         .any(|d| url.contains(d.as_str()))
+     {
+         return false;
+     }
+     true
+ }
+ 
+ fn is_downloadable(url: &str) -> bool {
+-    !BLOCKED_DOMAINS.iter().any(|d| url.contains(d))
++     /* ~ changed by cargo-mutants ~ */BLOCKED_DOMAINS.iter().any(|d| url.contains(d))
+ }
+ 
+ /// Resolve a PDF URL using all available sources (default config).
+ ///
+ /// Convenience wrapper that uses [`ResolverConfig::default()`].
+ /// For custom configuration, use [`resolve_pdf_with_config`].
+ pub fn resolve_pdf(
+     doi: Option<&str>,

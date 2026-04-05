@@ -1,0 +1,48 @@
+--- crates/paper-resolver/src/lib.rs
++++ replace try_core -> Option<ResolvedPdf> with Some(Default::default())
+@@ -379,44 +379,17 @@
+ // CORE
+ // ---------------------------------------------------------------------------
+ 
+ async fn try_core(
+     client: &reqwest::Client,
+     doi: Option<&str>,
+     title: Option<&str>,
+ ) -> Option<ResolvedPdf> {
+-    let query = if let Some(doi) = doi {
+-        format!(r#"doi:"{doi}""#)
+-    } else {
+-        let title = title?;
+-        format!(r#"title:"{title}""#)
+-    };
+-
+-    let resp = client
+-        .get("https://api.core.ac.uk/v3/search/works")
+-        .query(&[("q", &query), ("limit", &"1".to_string())])
+-        .send()
+-        .await
+-        .ok()?;
+-
+-    if !resp.status().is_success() {
+-        return None;
+-    }
+-    let data: serde_json::Value = resp.json().await.ok()?;
+-    let work = data.get("results")?.as_array()?.first()?;
+-
+-    if let Some(url) = work.get("downloadUrl").and_then(|v| v.as_str()) {
+-        return Some(ResolvedPdf {
+-            url: url.into(),
+-            source: "core".into(),
+-            downloadable: is_downloadable(url),
+-        });
+-    }
+-    None
++    Some(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // ---------------------------------------------------------------------------
+ // Google Scholar
+ // ---------------------------------------------------------------------------
+ 
+ async fn try_google_scholar(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {
+     let title = title?;

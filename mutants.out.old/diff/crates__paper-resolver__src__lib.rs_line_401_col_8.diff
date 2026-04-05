@@ -1,0 +1,21 @@
+--- crates/paper-resolver/src/lib.rs
++++ delete ! in try_core
+@@ -393,17 +393,17 @@
+ 
+     let resp = client
+         .get("https://api.core.ac.uk/v3/search/works")
+         .query(&[("q", &query), ("limit", &"1".to_string())])
+         .send()
+         .await
+         .ok()?;
+ 
+-    if !resp.status().is_success() {
++    if  /* ~ changed by cargo-mutants ~ */resp.status().is_success() {
+         return None;
+     }
+     let data: serde_json::Value = resp.json().await.ok()?;
+     let work = data.get("results")?.as_array()?.first()?;
+ 
+     if let Some(url) = work.get("downloadUrl").and_then(|v| v.as_str()) {
+         return Some(ResolvedPdf {
+             url: url.into(),

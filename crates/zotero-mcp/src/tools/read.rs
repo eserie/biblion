@@ -375,3 +375,108 @@ pub fn zotero_get_recent(args: &Value, ctx: &ServerContext) -> ToolCallResult {
 
     ToolCallResult::text(output)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_helpers::test_ctx;
+    use serde_json::json;
+
+    #[test]
+    fn status_returns_item_count() {
+        let ctx = test_ctx();
+        let result = zotero_status(&ctx);
+        assert!(result.is_error.is_none());
+        let text = &result.content[0].text;
+        assert!(text.contains("Items: 2"), "Got: {text}");
+        assert!(text.contains("Collections: 1"), "Got: {text}");
+    }
+
+    #[test]
+    fn search_finds_by_title() {
+        let ctx = test_ctx();
+        let result = zotero_search(&json!({"query": "Hints", "limit": 10}), &ctx);
+        let text = &result.content[0].text;
+        assert!(text.contains("demilloHintsTestData1978"), "Got: {text}");
+    }
+
+    #[test]
+    fn search_no_results() {
+        let ctx = test_ctx();
+        let result = zotero_search(&json!({"query": "quantum computing", "limit": 10}), &ctx);
+        let text = &result.content[0].text;
+        assert!(text.contains("No items found"), "Got: {text}");
+    }
+
+    #[test]
+    fn search_missing_query_returns_error() {
+        let ctx = test_ctx();
+        let result = zotero_search(&json!({}), &ctx);
+        assert_eq!(result.is_error, Some(true));
+    }
+
+    #[test]
+    fn get_item_by_citekey() {
+        let ctx = test_ctx();
+        let result = zotero_get_item(&json!({"citekey": "demilloHintsTestData1978"}), &ctx);
+        let text = &result.content[0].text;
+        assert!(text.contains("Hints on Test Data Selection"), "Got: {text}");
+        assert!(text.contains("DeMillo"), "Got: {text}");
+    }
+
+    #[test]
+    fn get_item_unknown_citekey() {
+        let ctx = test_ctx();
+        let result = zotero_get_item(&json!({"citekey": "nonexistent2099"}), &ctx);
+        assert_eq!(result.is_error, Some(true));
+    }
+
+    #[test]
+    fn get_notes_found() {
+        let ctx = test_ctx();
+        let result = zotero_get_notes(&json!({"citekey": "demilloHintsTestData1978"}), &ctx);
+        let text = &result.content[0].text;
+        assert!(text.contains("foundational paper"), "Got: {text}");
+    }
+
+    #[test]
+    fn get_collections_lists_all() {
+        let ctx = test_ctx();
+        let result = zotero_get_collections(&ctx);
+        let text = &result.content[0].text;
+        assert!(text.contains("Mutation Testing"), "Got: {text}");
+    }
+
+    #[test]
+    fn get_collection_items_found() {
+        let ctx = test_ctx();
+        let result =
+            zotero_get_collection_items(&json!({"collection_key": "COL00001", "limit": 10}), &ctx);
+        let text = &result.content[0].text;
+        assert!(text.contains("demilloHintsTestData1978"), "Got: {text}");
+    }
+
+    #[test]
+    fn get_recent_returns_items() {
+        let ctx = test_ctx();
+        let result = zotero_get_recent(&json!({"limit": 5}), &ctx);
+        let text = &result.content[0].text;
+        assert!(text.contains("demilloHintsTestData1978"), "Got: {text}");
+    }
+
+    #[test]
+    fn get_pdf_path_found() {
+        let ctx = test_ctx();
+        let result = zotero_get_pdf_path(&json!({"citekey": "demilloHintsTestData1978"}), &ctx);
+        let text = &result.content[0].text;
+        assert!(text.contains("DeMillo1978.pdf"), "Got: {text}");
+    }
+
+    #[test]
+    fn list_attachments_empty() {
+        let ctx = test_ctx();
+        let result = zotero_list_attachments(&json!({"citekey": "artTesting2020"}), &ctx);
+        let text = &result.content[0].text;
+        assert!(text.contains("No attachments"), "Got: {text}");
+    }
+}

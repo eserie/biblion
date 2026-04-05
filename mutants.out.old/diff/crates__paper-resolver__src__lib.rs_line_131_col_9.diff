@@ -1,0 +1,21 @@
+--- crates/paper-resolver/src/lib.rs
++++ replace ResolverConfig::is_enabled -> bool with true
+@@ -123,17 +123,17 @@
+             extra_blocked_domains: vec![],
+         }
+     }
+ }
+ 
+ impl ResolverConfig {
+     /// Check if a source is enabled by name.
+     pub fn is_enabled(&self, name: &str) -> bool {
+-        self.sources.iter().any(|s| s.name == name && s.enabled)
++        true /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     /// Get the priority (position index) for a source.
+     pub fn priority(&self, name: &str) -> u8 {
+         self.sources
+             .iter()
+             .position(|s| s.name == name)
+             .map(|p| (p + 1) as u8)

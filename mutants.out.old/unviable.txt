@@ -1,0 +1,18 @@
+crates/paper-resolver/src/lib.rs:52:5: replace pdf_runtime -> &'static tokio::runtime::Runtime with Box::leak(Box::new(Default::default()))
+crates/paper-resolver/src/lib.rs:184:5: replace resolve_pdf -> Option<ResolvedPdf> with Some(Default::default())
+crates/paper-resolver/src/lib.rs:198:5: replace resolve_pdf_with_config -> Option<ResolvedPdf> with Some(Default::default())
+crates/paper-resolver/src/lib.rs:200:13: replace && with || in resolve_pdf_with_config
+crates/paper-resolver/src/lib.rs:209:13: replace && with || in resolve_pdf_with_config
+crates/paper-resolver/src/lib.rs:232:5: replace resolve_pdf_async -> Option<ResolvedPdf> with Some(Default::default())
+crates/paper-resolver/src/lib.rs:310:5: replace try_openalex -> Option<ResolvedPdf> with Some(Default::default())
+crates/paper-resolver/src/lib.rs:354:9: replace && with || in try_openalex
+crates/paper-resolver/src/lib.rs:387:5: replace try_core -> Option<ResolvedPdf> with Some(Default::default())
+crates/paper-resolver/src/lib.rs:422:5: replace try_google_scholar -> Option<ResolvedPdf> with Some(Default::default())
+crates/paper-resolver/src/lib.rs:473:5: replace try_unpaywall -> Option<ResolvedPdf> with Some(Default::default())
+crates/paper-resolver/src/lib.rs:517:5: replace try_crossref -> Option<ResolvedPdf> with Some(Default::default())
+crates/paper-resolver/src/lib.rs:538:9: replace && with || in try_crossref
+crates/paper-resolver/src/lib.rs:557:13: replace && with || in try_crossref
+crates/paper-resolver/src/lib.rs:574:5: replace try_zenodo -> Option<ResolvedPdf> with Some(Default::default())
+crates/paper-resolver/src/lib.rs:603:17: replace && with || in try_zenodo
+crates/paper-resolver/src/lib.rs:621:5: replace try_ssrn -> Option<ResolvedPdf> with Some(Default::default())
+crates/paper-resolver/src/lib.rs:655:5: replace try_semantic_scholar -> Option<ResolvedPdf> with Some(Default::default())

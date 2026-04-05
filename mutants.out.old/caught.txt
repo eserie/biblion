@@ -1,0 +1,12 @@
+crates/paper-resolver/src/lib.rs:131:9: replace ResolverConfig::is_enabled -> bool with false
+crates/paper-resolver/src/lib.rs:172:5: replace is_downloadable -> bool with true
+crates/paper-resolver/src/lib.rs:172:5: replace is_downloadable -> bool with false
+crates/paper-resolver/src/lib.rs:172:5: delete ! in is_downloadable
+crates/paper-resolver/src/lib.rs:184:5: replace resolve_pdf -> Option<ResolvedPdf> with None
+crates/paper-resolver/src/lib.rs:198:5: replace resolve_pdf_with_config -> Option<ResolvedPdf> with None
+crates/paper-resolver/src/lib.rs:294:5: replace doi_to_arxiv_id -> Option<String> with None
+crates/paper-resolver/src/lib.rs:294:5: replace doi_to_arxiv_id -> Option<String> with Some(String::new())
+crates/paper-resolver/src/lib.rs:294:5: replace doi_to_arxiv_id -> Option<String> with Some("xyzzy".into())
+crates/paper-resolver/src/lib.rs:298:5: replace url_to_arxiv_id -> Option<String> with None
+crates/paper-resolver/src/lib.rs:298:5: replace url_to_arxiv_id -> Option<String> with Some(String::new())
+crates/paper-resolver/src/lib.rs:298:5: replace url_to_arxiv_id -> Option<String> with Some("xyzzy".into())

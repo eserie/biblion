@@ -1,0 +1,21 @@
+--- crates/paper-resolver/src/lib.rs
++++ replace url_to_arxiv_id -> Option<String> with Some("xyzzy".into())
+@@ -290,17 +290,17 @@
+ // arXiv helpers
+ // ---------------------------------------------------------------------------
+ 
+ fn doi_to_arxiv_id(doi: &str) -> Option<String> {
+     doi.strip_prefix("10.48550/arXiv.").map(String::from)
+ }
+ 
+ fn url_to_arxiv_id(url: &str) -> Option<String> {
+-    ARXIV_RE.captures(url).map(|c| c[1].to_string())
++    Some("xyzzy".into()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // ---------------------------------------------------------------------------
+ // OpenAlex
+ // ---------------------------------------------------------------------------
+ 
+ async fn try_openalex(
+     client: &reqwest::Client,

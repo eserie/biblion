@@ -1,0 +1,23 @@
+--- crates/paper-resolver/src/lib.rs
++++ delete match arm "zenodo" in resolve_pdf_async
+@@ -258,19 +258,17 @@
+                 try_google_scholar(c, title).await.map(|r| (pri, r))
+             })),
+             "unpaywall" => futures.push(Box::pin(async move {
+                 try_unpaywall(c, doi).await.map(|r| (pri, r))
+             })),
+             "crossref" => futures.push(Box::pin(async move {
+                 try_crossref(c, doi).await.map(|r| (pri, r))
+             })),
+-            "zenodo" => futures.push(Box::pin(async move {
+-                try_zenodo(c, title).await.map(|r| (pri, r))
+-            })),
++             /* ~ changed by cargo-mutants ~ */
+             "ssrn" => futures.push(Box::pin(async move {
+                 try_ssrn(c, title).await.map(|r| (pri, r))
+             })),
+             "semantic_scholar" => futures.push(Box::pin(async move {
+                 try_semantic_scholar(c, doi, title).await.map(|r| (pri, r))
+             })),
+             _ => {} // Unknown source name, skip
+         }

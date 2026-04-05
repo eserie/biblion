@@ -1,0 +1,21 @@
+--- crates/paper-resolver/src/lib.rs
++++ replace resolve_pdf -> Option<ResolvedPdf> with None
+@@ -176,17 +176,17 @@
+ ///
+ /// Convenience wrapper that uses [`ResolverConfig::default()`].
+ /// For custom configuration, use [`resolve_pdf_with_config`].
+ pub fn resolve_pdf(
+     doi: Option<&str>,
+     url: Option<&str>,
+     title: Option<&str>,
+ ) -> Option<ResolvedPdf> {
+-    resolve_pdf_with_config(doi, url, title, &ResolverConfig::default())
++    None /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Resolve a PDF URL with custom configuration.
+ ///
+ /// Sync version — creates a tokio runtime internally.
+ /// For async callers, use [`resolve_pdf_async`].
+ pub fn resolve_pdf_with_config(
+     doi: Option<&str>,

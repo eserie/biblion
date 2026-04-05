@@ -1,0 +1,21 @@
+--- crates/paper-resolver/src/lib.rs
++++ replace doi_to_arxiv_id -> Option<String> with None
+@@ -286,17 +286,17 @@
+     candidates.into_iter().next().map(|(_, r)| r)
+ }
+ 
+ // ---------------------------------------------------------------------------
+ // arXiv helpers
+ // ---------------------------------------------------------------------------
+ 
+ fn doi_to_arxiv_id(doi: &str) -> Option<String> {
+-    doi.strip_prefix("10.48550/arXiv.").map(String::from)
++    None /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn url_to_arxiv_id(url: &str) -> Option<String> {
+     ARXIV_RE.captures(url).map(|c| c[1].to_string())
+ }
+ 
+ // ---------------------------------------------------------------------------
+ // OpenAlex

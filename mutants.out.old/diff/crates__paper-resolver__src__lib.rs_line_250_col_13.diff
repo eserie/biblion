@@ -1,0 +1,21 @@
+--- crates/paper-resolver/src/lib.rs
++++ delete match arm "arxiv" in resolve_pdf_async
+@@ -242,17 +242,17 @@
+ 
+     for source in &config.sources {
+         if !source.enabled {
+             continue;
+         }
+         let pri = config.priority(&source.name);
+         let c = &client;
+         match source.name.as_str() {
+-            "arxiv" => {} // Already handled synchronously above
++             /* ~ changed by cargo-mutants ~ */ // Already handled synchronously above
+             "openalex" => futures.push(Box::pin(async move {
+                 try_openalex(c, doi, title).await.map(|r| (pri, r))
+             })),
+             "core" => futures.push(Box::pin(async move {
+                 try_core(c, doi, title).await.map(|r| (pri, r))
+             })),
+             "google_scholar" => futures.push(Box::pin(async move {
+                 try_google_scholar(c, title).await.map(|r| (pri, r))

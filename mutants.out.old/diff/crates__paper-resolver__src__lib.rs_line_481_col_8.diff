@@ -1,0 +1,21 @@
+--- crates/paper-resolver/src/lib.rs
++++ delete ! in try_unpaywall
+@@ -473,17 +473,17 @@
+     let doi = doi?;
+     let resp = client
+         .get(format!("https://api.unpaywall.org/v2/{doi}"))
+         .query(&[("email", "zotero-mcp@example.com")])
+         .send()
+         .await
+         .ok()?;
+ 
+-    if !resp.status().is_success() {
++    if  /* ~ changed by cargo-mutants ~ */resp.status().is_success() {
+         return None;
+     }
+     let data: serde_json::Value = resp.json().await.ok()?;
+ 
+     if let Some(url) = data
+         .pointer("/best_oa_location/url_for_pdf")
+         .and_then(|v| v.as_str())
+     {

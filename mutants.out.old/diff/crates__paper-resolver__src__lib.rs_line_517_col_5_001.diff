@@ -1,0 +1,70 @@
+--- crates/paper-resolver/src/lib.rs
++++ replace try_crossref -> Option<ResolvedPdf> with Some(Default::default())
+@@ -509,66 +509,17 @@
+     None
+ }
+ 
+ // ---------------------------------------------------------------------------
+ // Crossref
+ // ---------------------------------------------------------------------------
+ 
+ async fn try_crossref(client: &reqwest::Client, doi: Option<&str>) -> Option<ResolvedPdf> {
+-    let doi = doi?;
+-    let resp = client
+-        .get(format!("https://api.crossref.org/works/{doi}"))
+-        .header(
+-            "User-Agent",
+-            "ZoteroMCP/0.1 (mailto:zotero-mcp@example.com)",
+-        )
+-        .send()
+-        .await
+-        .ok()?;
+-
+-    if !resp.status().is_success() {
+-        return None;
+-    }
+-    let data: serde_json::Value = resp.json().await.ok()?;
+-    let msg = data.get("message")?;
+-
+-    // Check resource.primary.URL
+-    if let Some(url) = msg
+-        .pointer("/resource/primary/URL")
+-        .and_then(|v| v.as_str())
+-        && url.to_lowercase().ends_with(".pdf")
+-    {
+-        return Some(ResolvedPdf {
+-            url: url.into(),
+-            source: "crossref".into(),
+-            downloadable: is_downloadable(url),
+-        });
+-    }
+-    // Check link[] array
+-    for link in msg
+-        .get("link")
+-        .and_then(|v| v.as_array())
+-        .unwrap_or(&vec![])
+-    {
+-        let ct = link
+-            .get("content-type")
+-            .and_then(|v| v.as_str())
+-            .unwrap_or("");
+-        if ct.contains("pdf")
+-            && let Some(url) = link.get("URL").and_then(|v| v.as_str())
+-        {
+-            return Some(ResolvedPdf {
+-                url: url.into(),
+-                source: "crossref".into(),
+-                downloadable: is_downloadable(url),
+-            });
+-        }
+-    }
+-    None
++    Some(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // ---------------------------------------------------------------------------
+ // Zenodo
+ // ---------------------------------------------------------------------------
+ 
+ async fn try_zenodo(client: &reqwest::Client, title: Option<&str>) -> Option<ResolvedPdf> {
+     let title = title?;

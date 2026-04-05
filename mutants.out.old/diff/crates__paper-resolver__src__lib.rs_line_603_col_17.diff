@@ -1,0 +1,21 @@
+--- crates/paper-resolver/src/lib.rs
++++ replace && with || in try_zenodo
+@@ -595,17 +595,17 @@
+             .unwrap_or(&vec![])
+         {
+             if file
+                 .get("key")
+                 .and_then(|v| v.as_str())
+                 .unwrap_or("")
+                 .to_lowercase()
+                 .ends_with(".pdf")
+-                && let Some(url) = file.pointer("/links/self").and_then(|v| v.as_str())
++                || /* ~ changed by cargo-mutants ~ */ let Some(url) = file.pointer("/links/self").and_then(|v| v.as_str())
+             {
+                 return Some(ResolvedPdf {
+                     url: url.into(),
+                     source: "zenodo".into(),
+                     downloadable: true,
+                 });
+             }
+         }

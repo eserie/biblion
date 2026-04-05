@@ -787,3 +787,98 @@ mod tests {
         assert!(is_downloadable("https://example.edu/paper.pdf"));
     }
 }
+
+#[cfg(test)]
+mod config_tests {
+    use super::*;
+
+    #[test]
+    fn default_config_has_all_sources_enabled() {
+        let config = ResolverConfig::default();
+        assert_eq!(config.sources.len(), 9);
+        for source in &config.sources {
+            assert!(source.enabled, "Source {} should be enabled", source.name);
+        }
+    }
+
+    #[test]
+    fn is_enabled_true_for_enabled_source() {
+        let config = ResolverConfig::default();
+        assert!(config.is_enabled("arxiv"));
+        assert!(config.is_enabled("openalex"));
+        assert!(config.is_enabled("semantic_scholar"));
+    }
+
+    #[test]
+    fn is_enabled_false_for_disabled_source() {
+        let mut config = ResolverConfig::default();
+        config.sources[1].enabled = false; // disable openalex
+        assert!(!config.is_enabled("openalex"));
+        assert!(config.is_enabled("arxiv")); // others still enabled
+    }
+
+    #[test]
+    fn is_enabled_false_for_unknown_source() {
+        let config = ResolverConfig::default();
+        assert!(!config.is_enabled("nonexistent"));
+    }
+
+    #[test]
+    fn priority_reflects_position() {
+        let config = ResolverConfig::default();
+        assert_eq!(config.priority("arxiv"), 1);
+        assert_eq!(config.priority("openalex"), 2);
+        assert_eq!(config.priority("semantic_scholar"), 9);
+    }
+
+    #[test]
+    fn priority_returns_99_for_unknown() {
+        let config = ResolverConfig::default();
+        assert_eq!(config.priority("nonexistent"), 99);
+    }
+
+    #[test]
+    fn custom_source_order_changes_priority() {
+        let config = ResolverConfig {
+            sources: vec![
+                SourceEntry {
+                    name: "unpaywall".into(),
+                    enabled: true,
+                },
+                SourceEntry {
+                    name: "arxiv".into(),
+                    enabled: true,
+                },
+            ],
+            ..Default::default()
+        };
+        assert_eq!(config.priority("unpaywall"), 1);
+        assert_eq!(config.priority("arxiv"), 2);
+    }
+
+    #[test]
+    fn resolve_with_arxiv_disabled_skips_arxiv() {
+        let mut config = ResolverConfig::default();
+        // Disable arxiv
+        config.sources[0].enabled = false;
+        // This DOI would normally resolve instantly via arxiv
+        let result =
+            resolve_pdf_with_config(Some("10.48550/arXiv.2105.15183"), None, None, &config);
+        // With arxiv disabled and no network, should return None
+        // (or a result from another source if network available)
+        match result {
+            None => {} // Expected without network
+            Some(r) => assert_ne!(r.source, "arxiv", "Should not use disabled arxiv"),
+        }
+    }
+
+    #[test]
+    fn resolve_with_config_uses_arxiv_when_enabled() {
+        let config = ResolverConfig::default();
+        let result =
+            resolve_pdf_with_config(Some("10.48550/arXiv.2105.15183"), None, None, &config);
+        let r = result.unwrap();
+        assert_eq!(r.source, "arxiv");
+        assert!(r.downloadable);
+    }
+}
