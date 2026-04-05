@@ -98,14 +98,24 @@ impl ZoteroWebClient {
     }
 
     /// GET an item template for a given type.
+    ///
+    /// Note: the template endpoint is global (`/items/new`), not scoped
+    /// to a user library. We use the API root, not `self.base_url`.
     pub fn item_template(&self, item_type: &str) -> Result<Value> {
+        let api_root = if self.base_url.contains("api.zotero.org") {
+            "https://api.zotero.org"
+        } else {
+            // Testing with custom base URL — use it as-is
+            &self.base_url
+        };
         let resp = self
             .client
-            .get(format!("{}/items/new", self.base_url))
+            .get(format!("{api_root}/items/new"))
             .query(&[("itemType", item_type)])
             .headers(self.headers())
             .send()?;
-        resp.error_for_status_ref()?;
+        resp.error_for_status_ref()
+            .with_context(|| format!("Failed to get template for itemType '{item_type}'"))?;
         resp.json().map_err(Into::into)
     }
 
