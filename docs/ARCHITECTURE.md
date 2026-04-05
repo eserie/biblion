@@ -31,18 +31,18 @@ biblion/                          [workspace]
 
 ## Data flow
 
-```
-Claude → stdio/SSE → JSON-RPC parse → dispatch
-                                         │
-                         ┌───────────────┼───────────────┐
-                         │               │               │
-                    Read tools      Write tools     Paper tools
-                    (sync)          (blocking HTTP)  (tokio async)
-                         │               │               │
-                    zotero.sqlite   Zotero Web API  9 academic APIs
-                    bbt.migrated    (reqwest)       (concurrent)
-                         │
-                    <1ms response
+```mermaid
+flowchart LR
+    Client[Claude / Agent] -->|stdio or SSE| Server[server::dispatch]
+    Server --> Read[Read tools<br/>sync SQLite]
+    Server --> Write[Write tools<br/>blocking HTTP]
+    Server --> Paper[Paper tools<br/>tokio async]
+    Read --> ZotDB[(zotero.sqlite<br/>bbt.migrated)]
+    Write --> API[Zotero Web API]
+    Paper --> Sources[9 academic APIs<br/>concurrent]
+    Read -->|< 1ms| Server
+    Write -->|200-500ms| Server
+    Paper -->|1-20s| Server
 ```
 
 1. Client sends JSON-RPC request via stdio pipe or SSE HTTP POST
@@ -58,6 +58,18 @@ Biblion exposes the raw data needed for content-addressing without
 implementing content-addressing itself. External tools use these
 primitives for deduplication, verification, and cross-system linking.
 
+```mermaid
+graph TD
+    Zotero[(zotero.sqlite)] -->|storageHash<br/>MD5| Biblion[Biblion MCP]
+    Zotero -->|path| Biblion
+    Zotero -->|citationKey| Biblion
+    Zotero -->|DOI| Biblion
+    Zotero -->|item_key| Biblion
+    Biblion -->|MCP protocol| Consumer[External tools<br/>dedup / verify / link]
+    style Biblion fill:#f9f,stroke:#333
+    style Consumer fill:#bbf,stroke:#333,stroke-dasharray: 5 5
+```
+
 | Primitive | Source | Tool |
 |-----------|--------|------|
 | `storage_hash` (MD5) | `itemAttachments.storageHash` | `zotero_get_pdf_path`, `zotero_list_attachments` |
@@ -71,6 +83,14 @@ cross-system identity. It reads what Zotero stored and exposes it
 through a universal protocol (MCP) that any consumer can use.
 
 ## Agent auto-description
+
+```mermaid
+flowchart LR
+    MD[docs/MCP_INSTRUCTIONS.md] -->|include_str!<br/>compile time| Binary[biblion binary]
+    Binary -->|MCP initialize<br/>instructions field| Agent[Connecting agent]
+    style MD fill:#afa,stroke:#333
+    style Binary fill:#ffa,stroke:#333
+```
 
 Agents receive instructions on MCP connection via the `instructions`
 field in the `initialize` response. The content comes from
@@ -105,6 +125,8 @@ into the binary — no external file needed at runtime.
    "zotero_my_tool" => read::zotero_my_tool(args, ctx),
    ```
 
+4. **Update `docs/MCP_INSTRUCTIONS.md`** — agents see this on connect.
+
 ## How to add a new PDF source
 
 1. **Add async handler** in `crates/paper-resolver/src/lib.rs`:
@@ -122,5 +144,7 @@ into the binary — no external file needed at runtime.
        try_my_source(c, doi, title).await.map(|r| (pri, r))
    })),
    ```
+
+4. **Update `docs/MCP_INSTRUCTIONS.md`** if the source should be mentioned to agents.
 
 The source will automatically be configurable via TOML and shown in `paper_source_status`.
