@@ -90,7 +90,7 @@ jobs:
         continue-on-error: true
 
       - name: Wait for crates.io index
-        run: sleep 30
+        run: sleep 60
 
       - name: Publish biblion
         run: cargo publish -p biblion --token ${{ secrets.CARGO_TOKEN }}

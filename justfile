@@ -80,7 +80,8 @@ release version:
     echo ""
     echo "→ Committing and tagging..."
     git add -A
-    git commit -m "release: v{{version}}"
+    # Commit only if there are staged changes (versions may already match)
+    git diff --cached --quiet || git commit -m "release: v{{version}}"
     git tag -a "v{{version}}" -m "Release v{{version}}"
     echo ""
     echo "→ Pushing to origin..."
