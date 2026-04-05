@@ -63,7 +63,7 @@ pub fn run_sse(ctx: ServerContext, host: &str, port: u16) -> Result<()> {
             .with_state(state);
 
         let addr = format!("{host}:{port}");
-        eprintln!("[zotero-mcp] SSE server listening on http://{addr}/sse");
+        eprintln!("[biblion] SSE server listening on http://{addr}/sse");
 
         let listener = tokio::net::TcpListener::bind(&addr).await?;
         axum::serve(listener, app).await?;
@@ -92,10 +92,10 @@ async fn handle_sse(
     tokio::spawn(async move {
         tx_cleanup.closed().await;
         sessions_cleanup.write().await.remove(&session_id_cleanup);
-        eprintln!("[zotero-mcp] Session disconnected: {session_id_cleanup}");
+        eprintln!("[biblion] Session disconnected: {session_id_cleanup}");
     });
 
-    eprintln!("[zotero-mcp] New SSE session: {session_id}");
+    eprintln!("[biblion] New SSE session: {session_id}");
 
     // Send endpoint event
     let endpoint_url = format!("/messages?session_id={session_id}");
@@ -193,7 +193,7 @@ mod tests {
         };
         let resp = crate::server::dispatch(&req, &ctx).unwrap();
         let result = resp.result.unwrap();
-        assert_eq!(result["serverInfo"]["name"], "zotero-mcp");
+        assert_eq!(result["serverInfo"]["name"], "biblion");
     }
 
     #[test]

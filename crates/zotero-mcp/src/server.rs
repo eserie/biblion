@@ -132,7 +132,7 @@ fn handle_initialize(request: &JsonRpcRequest) -> JsonRpcResponse {
             },
         },
         server_info: ServerInfo {
-            name: "zotero-mcp".into(),
+            name: "biblion".into(),
             version: env!("CARGO_PKG_VERSION").into(),
         },
     };
@@ -194,8 +194,8 @@ pub fn log(ctx: &ServerContext, level: LogLevel, message: &str) {
     if level_enabled(ctx.config.log_level, level) {
         let prefix = match level {
             LogLevel::Quiet => "",
-            LogLevel::Info => "[zotero-mcp] ",
-            LogLevel::Debug => "[zotero-mcp:debug] ",
+            LogLevel::Info => "[biblion] ",
+            LogLevel::Debug => "[biblion:debug] ",
         };
         eprintln!("{prefix}{message}");
     }
@@ -244,7 +244,7 @@ mod tests {
         let resp = dispatch(&req, &ctx).unwrap();
         let result = resp.result.unwrap();
         assert_eq!(result["protocolVersion"], "2024-11-05");
-        assert_eq!(result["serverInfo"]["name"], "zotero-mcp");
+        assert_eq!(result["serverInfo"]["name"], "biblion");
     }
 
     #[test]

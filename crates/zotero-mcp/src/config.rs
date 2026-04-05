@@ -130,13 +130,13 @@ fn env_path(var: &str, default: &str) -> PathBuf {
 ///
 /// Looks for config at:
 /// 1. `$ZOTERO_MCP_CONFIG` (if set)
-/// 2. `~/.config/zotero-mcp/config.toml`
+/// 2. `~/.config/biblion/config.toml`
 fn load_resolver_config() -> paper_resolver::ResolverConfig {
     let config_path = std::env::var("ZOTERO_MCP_CONFIG")
         .map(PathBuf::from)
         .unwrap_or_else(|_| {
             let home = std::env::var("HOME").unwrap_or_default();
-            PathBuf::from(format!("{home}/.config/zotero-mcp/config.toml"))
+            PathBuf::from(format!("{home}/.config/biblion/config.toml"))
         });
 
     if !config_path.exists() {
@@ -147,7 +147,7 @@ fn load_resolver_config() -> paper_resolver::ResolverConfig {
         Ok(c) => c,
         Err(e) => {
             eprintln!(
-                "[zotero-mcp] Warning: cannot read config file {}: {e}",
+                "[biblion] Warning: cannot read config file {}: {e}",
                 config_path.display()
             );
             return paper_resolver::ResolverConfig::default();
@@ -158,7 +158,7 @@ fn load_resolver_config() -> paper_resolver::ResolverConfig {
         Ok(t) => t,
         Err(e) => {
             eprintln!(
-                "[zotero-mcp] Warning: invalid TOML in {}: {e}",
+                "[biblion] Warning: invalid TOML in {}: {e}",
                 config_path.display()
             );
             return paper_resolver::ResolverConfig::default();
@@ -187,7 +187,7 @@ fn load_resolver_config() -> paper_resolver::ResolverConfig {
                     // Validate source name
                     if !paper_resolver::SOURCE_NAMES.contains(&name.as_str()) {
                         eprintln!(
-                            "[zotero-mcp] Warning: unknown source '{}' in config (valid: {:?})",
+                            "[biblion] Warning: unknown source '{}' in config (valid: {:?})",
                             name,
                             paper_resolver::SOURCE_NAMES
                         );

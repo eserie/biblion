@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 description = "Concurrent PDF resolver for academic papers — 9 sources (arXiv, OpenAlex, CORE, Google Scholar, Unpaywall, Crossref, Zenodo, SSRN, Semantic Scholar)"
 license = "MIT"
-repository = "https://github.com/eserie/zotero-mcp-rs"
+repository = "https://github.com/eserie/biblion"
 keywords = ["academic", "pdf", "arxiv", "open-access", "doi"]
 categories = ["web-programming", "science"]
 

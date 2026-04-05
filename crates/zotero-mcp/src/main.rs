@@ -11,8 +11,8 @@
 //!
 //! # Subcommands
 //!
-//! - `zotero-mcp` — run MCP server (default)
-//! - `zotero-mcp check` — print diagnostics and exit
+//! - `biblion` — run MCP server (default)
+//! - `biblion check` — print diagnostics and exit
 
 mod api;
 mod config;
@@ -60,7 +60,7 @@ fn run_check() -> Result<()> {
     let config = config::Config::from_env();
     let db = db::DbPool::open(&config.zotero_sqlite_path, &config.bbt_migrated_path);
 
-    println!("zotero-mcp v{}", env!("CARGO_PKG_VERSION"));
+    println!("biblion v{}", env!("CARGO_PKG_VERSION"));
     println!();
 
     // Zotero database

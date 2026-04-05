@@ -227,13 +227,13 @@ mod tests {
                 },
             },
             server_info: ServerInfo {
-                name: "zotero-mcp".into(),
+                name: "biblion".into(),
                 version: "0.1.0".into(),
             },
         };
         let json = serde_json::to_value(result).unwrap();
         assert_eq!(json["protocolVersion"], "2024-11-05");
-        assert_eq!(json["serverInfo"]["name"], "zotero-mcp");
+        assert_eq!(json["serverInfo"]["name"], "biblion");
     }
 
     #[test]

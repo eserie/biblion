@@ -24,7 +24,7 @@
 //! To verify output matches BBT's CSL engine, compare:
 //! ```bash
 //! # Native (Rust):
-//! echo '...tools/call zotero_get_bibliography...' | zotero-mcp-rs
+//! echo '...tools/call zotero_get_bibliography...' | biblion-rs
 //!
 //! # BBT reference (Python, requires Zotero running):
 //! curl -X POST http://localhost:23119/better-bibtex/json-rpc \

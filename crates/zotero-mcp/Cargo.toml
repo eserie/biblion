@@ -1,10 +1,10 @@
 [package]
-name = "zotero-mcp"
+name = "biblion"
 version = "0.1.0"
 edition = "2024"
 description = "High-performance MCP server that gives LLMs sub-millisecond access to your Zotero library"
 license = "MIT"
-repository = "https://github.com/eserie/zotero-mcp-rs"
+repository = "https://github.com/eserie/biblion"
 readme = "../../README.md"
 keywords = ["zotero", "mcp", "model-context-protocol", "sqlite", "bibliography"]
 categories = ["command-line-utilities", "database"]

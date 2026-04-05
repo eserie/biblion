@@ -680,7 +680,7 @@ pub fn zotero_attach_pdf(args: &Value, ctx: &ServerContext) -> ToolCallResult {
 
     // Download PDF to temp file
     let tmp_dir = std::env::temp_dir();
-    let tmp_file = tmp_dir.join(format!("zotero-mcp-{item_key}.pdf"));
+    let tmp_file = tmp_dir.join(format!("biblion-{item_key}.pdf"));
     if let Err(e) = client.download_file(pdf_url, &tmp_file) {
         return ToolCallResult::error(format!("Download failed: {e}"));
     }
@@ -789,7 +789,7 @@ pub fn zotero_fetch_missing_pdfs(args: &Value, ctx: &ServerContext) -> ToolCallR
                             continue;
                         }
                     };
-                    let tmp = std::env::temp_dir().join(format!("zotero-mcp-{item_key}.pdf"));
+                    let tmp = std::env::temp_dir().join(format!("biblion-{item_key}.pdf"));
                     match client.download_file(&pdf.url, &tmp) {
                         Ok(()) => {
                             match client.attach_file(item_key, &tmp, &citekey) {

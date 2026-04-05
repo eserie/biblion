@@ -43,14 +43,14 @@ impl DbPool {
         let zotero = match zotero::ZoteroDb::open(zotero_path) {
             Ok(db) => Some(db),
             Err(e) => {
-                eprintln!("[zotero-mcp] Warning: cannot open zotero.sqlite: {e}");
+                eprintln!("[biblion] Warning: cannot open zotero.sqlite: {e}");
                 None
             }
         };
         let bbt = match bbt::BbtDb::open(bbt_path) {
             Ok(db) => Some(db),
             Err(e) => {
-                eprintln!("[zotero-mcp] Warning: cannot open better-bibtex.migrated: {e}");
+                eprintln!("[biblion] Warning: cannot open better-bibtex.migrated: {e}");
                 None
             }
         };

@@ -1,8 +1,8 @@
-# zotero-mcp
+# biblion
 
-[![CI](https://github.com/eserie/zotero-mcp-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/eserie/zotero-mcp-rs/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/eserie/zotero-mcp-rs/graph/badge.svg)](https://codecov.io/gh/eserie/zotero-mcp-rs)
-[![Mutation Score](https://img.shields.io/badge/mutation_score-72%25-green)](https://github.com/eserie/zotero-mcp-rs/actions/workflows/mutants.yml)
+[![CI](https://github.com/eserie/biblion/actions/workflows/ci.yml/badge.svg)](https://github.com/eserie/biblion/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/eserie/biblion/graph/badge.svg)](https://codecov.io/gh/eserie/biblion)
+[![Mutation Score](https://img.shields.io/badge/mutation_score-72%25-green)](https://github.com/eserie/biblion/actions/workflows/mutants.yml)
 [![Rust](https://img.shields.io/badge/rust-2024_edition-orange?logo=rust)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/protocol-MCP_2024--11--05-purple)](https://modelcontextprotocol.io)
@@ -20,10 +20,10 @@ You ask Claude "find me the BibTeX for that portfolio optimization paper" and it
 **1. Build and install**
 
 ```bash
-git clone https://github.com/eserie/zotero-mcp-rs.git
-cd zotero-mcp-rs
+git clone https://github.com/eserie/biblion.git
+cd biblion
 cargo build --release
-cp target/release/zotero-mcp ~/.local/bin/
+cp target/release/biblion ~/.local/bin/
 ```
 
 **2. Add to Claude Code** (in `~/.claude.json` under `"mcpServers"`):
@@ -31,7 +31,7 @@ cp target/release/zotero-mcp ~/.local/bin/
 ```json
 {
   "zotero": {
-    "command": "zotero-mcp"
+    "command": "biblion"
   }
 }
 ```
@@ -39,7 +39,7 @@ cp target/release/zotero-mcp ~/.local/bin/
 **3. Verify**
 
 ```bash
-zotero-mcp check
+biblion check
 ```
 
 That is it. Claude can now search your library, export citations, and format bibliographies.
@@ -115,7 +115,7 @@ Write tools are **disabled by default**. To enable them, set both `ZOTERO_API_KE
 
 ### TOML config file (optional)
 
-Place a file at `~/.config/zotero-mcp/config.toml` to configure the PDF resolver:
+Place a file at `~/.config/biblion/config.toml` to configure the PDF resolver:
 
 ```toml
 [resolver]
@@ -147,7 +147,7 @@ Override the config path with `ZOTERO_MCP_CONFIG=/path/to/config.toml`.
 For Claude Desktop or other HTTP-based clients:
 
 ```bash
-ZOTERO_MCP_TRANSPORT=sse zotero-mcp
+ZOTERO_MCP_TRANSPORT=sse biblion
 ```
 
 Then in Claude Desktop settings:
@@ -170,7 +170,7 @@ cargo test
 
 Requires Rust 1.85+ (2024 edition). The workspace contains two crates:
 
-- **zotero-mcp** — the MCP server
+- **biblion** — the MCP server
 - **paper-resolver** — standalone library for academic PDF resolution (usable independently)
 
 ## License

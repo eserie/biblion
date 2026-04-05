@@ -121,8 +121,8 @@ pub const SOURCE_NAMES: &[&str] = &[
 impl Default for ResolverConfig {
     fn default() -> Self {
         Self {
-            email: "zotero-mcp@example.com".into(),
-            user_agent: "zotero-mcp/0.1".into(),
+            email: "biblion@example.com".into(),
+            user_agent: "biblion/0.1".into(),
             timeout_secs: 20,
             sources: SOURCE_NAMES
                 .iter()
