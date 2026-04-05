@@ -37,7 +37,7 @@ cp target/release/zotero-mcp ~/.local/bin/
 **3. Verify**
 
 ```bash
-zotero-mcp --info
+zotero-mcp check
 ```
 
 That is it. Claude can now search your library, export citations, and format bibliographies.
