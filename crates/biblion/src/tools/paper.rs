@@ -4,7 +4,7 @@
 //! Zotero item. Useful for: "find me the PDF for this DOI", "is this paper
 //! available open-access?", "what sources are configured?"
 
-use serde_json::{Value, json};
+use serde_json::Value;
 
 use crate::protocol::ToolCallResult;
 use crate::server::ServerContext;
@@ -21,19 +21,9 @@ pub fn paper_resolve_pdf(args: &Value, ctx: &ServerContext) -> ToolCallResult {
         return ToolCallResult::error("Provide at least one of: doi, title, url".into());
     }
 
-    let result = paper_resolver::resolve_pdf_with_config(doi, url, title, &ctx.config.resolver);
+    let report = paper_resolver::resolve_pdf_with_report(doi, url, title, &ctx.config.resolver);
 
-    match result {
-        Some(pdf) => ToolCallResult::text(
-            serde_json::to_string_pretty(&json!({
-                "url": pdf.url,
-                "source": pdf.source,
-                "downloadable": pdf.downloadable,
-            }))
-            .unwrap_or_default(),
-        ),
-        None => ToolCallResult::text("No PDF found from available sources.".into()),
-    }
+    ToolCallResult::text(report.summary())
 }
 
 /// Show the current paper resolver configuration.

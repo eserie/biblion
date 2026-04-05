@@ -66,6 +66,39 @@ pub struct ResolvedPdf {
     pub downloadable: bool,
 }
 
+/// Detailed resolution result — includes per-source failure reasons.
+#[derive(Debug, Clone)]
+#[non_exhaustive]
+pub struct ResolveReport {
+    /// The best PDF found (if any).
+    pub pdf: Option<ResolvedPdf>,
+    /// Per-source outcomes: `(source_name, Ok(url) | Err(reason))`.
+    pub outcomes: Vec<(String, Result<String, String>)>,
+}
+
+impl ResolveReport {
+    /// Format a human-readable summary of all source outcomes.
+    pub fn summary(&self) -> String {
+        let mut out = String::new();
+        if let Some(ref pdf) = self.pdf {
+            out.push_str(&format!(
+                "PDF found via {} (downloadable: {})\n  {}\n\n",
+                pdf.source, pdf.downloadable, pdf.url
+            ));
+        } else {
+            out.push_str("No downloadable PDF found.\n\n");
+        }
+        out.push_str("Sources queried:\n");
+        for (name, outcome) in &self.outcomes {
+            match outcome {
+                Ok(url) => out.push_str(&format!("  {name}: found {url}\n")),
+                Err(reason) => out.push_str(&format!("  {name}: {reason}\n")),
+            }
+        }
+        out
+    }
+}
+
 /// A source entry — name + enabled flag.
 #[derive(Debug, Clone)]
 #[non_exhaustive]
@@ -258,6 +291,254 @@ pub fn resolve_pdf_with_config(
 
     // 2-9. Concurrent HTTP queries via tokio (shared runtime)
     pdf_runtime().block_on(resolve_pdf_async(doi, url, title, config))
+}
+
+/// Resolve with detailed per-source reporting.
+///
+/// Returns a [`ResolveReport`] with both the best PDF (if any) and
+/// per-source outcomes explaining why each source succeeded or failed.
+pub fn resolve_pdf_with_report(
+    doi: Option<&str>,
+    url: Option<&str>,
+    title: Option<&str>,
+    config: &ResolverConfig,
+) -> ResolveReport {
+    // 1. arXiv — instant, no network
+    if config.is_enabled("arxiv") {
+        if let Some(doi) = doi
+            && let Some(id) = doi_to_arxiv_id(doi)
+        {
+            let pdf = ResolvedPdf {
+                url: format!("https://arxiv.org/pdf/{id}.pdf"),
+                source: "arxiv".into(),
+                downloadable: true,
+            };
+            return ResolveReport {
+                outcomes: vec![("arxiv".into(), Ok(pdf.url.clone()))],
+                pdf: Some(pdf),
+            };
+        }
+        if let Some(url) = url
+            && let Some(id) = url_to_arxiv_id(url)
+        {
+            let pdf = ResolvedPdf {
+                url: format!("https://arxiv.org/pdf/{id}.pdf"),
+                source: "arxiv".into(),
+                downloadable: true,
+            };
+            return ResolveReport {
+                outcomes: vec![("arxiv".into(), Ok(pdf.url.clone()))],
+                pdf: Some(pdf),
+            };
+        }
+    }
+
+    pdf_runtime().block_on(resolve_pdf_async_with_report(doi, url, title, config))
+}
+
+/// Async version with detailed per-source reporting.
+pub async fn resolve_pdf_async_with_report(
+    doi: Option<&str>,
+    url: Option<&str>,
+    title: Option<&str>,
+    config: &ResolverConfig,
+) -> ResolveReport {
+    // arXiv from URL (same as sync path)
+    if config.is_enabled("arxiv")
+        && let Some(url) = url
+        && let Some(id) = url_to_arxiv_id(url)
+    {
+        let pdf = ResolvedPdf {
+            url: format!("https://arxiv.org/pdf/{id}.pdf"),
+            source: "arxiv".into(),
+            downloadable: true,
+        };
+        return ResolveReport {
+            outcomes: vec![("arxiv".into(), Ok(pdf.url.clone()))],
+            pdf: Some(pdf),
+        };
+    }
+
+    let client = match reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(config.timeout_secs))
+        .redirect(reqwest::redirect::Policy::limited(10))
+        .build()
+    {
+        Ok(c) => c,
+        Err(_) => {
+            return ResolveReport {
+                pdf: None,
+                outcomes: vec![("client".into(), Err("failed to build HTTP client".into()))],
+            };
+        }
+    };
+
+    type ReportFuture<'a> = std::pin::Pin<
+        Box<
+            dyn std::future::Future<Output = (String, u8, Result<ResolvedPdf, String>)> + Send + 'a,
+        >,
+    >;
+    let mut futures: Vec<ReportFuture<'_>> = Vec::new();
+
+    let ep = &config.endpoints;
+    for source in &config.sources {
+        if !source.enabled {
+            continue;
+        }
+        let pri = config.priority(&source.name);
+        let c = &client;
+        let name = source.name.clone();
+        match source.name.as_str() {
+            "arxiv" => {} // Already handled synchronously above
+            "openalex" => futures.push(Box::pin(async move {
+                let r = try_openalex(c, doi, title, ep).await;
+                (name, pri, r.ok_or_else(|| "no OA location found".into()))
+            })),
+            "core" => futures.push(Box::pin(async move {
+                let r = try_core(c, doi, title, ep).await;
+                (name, pri, r.ok_or_else(|| "no result".into()))
+            })),
+            "google_scholar" => futures.push(Box::pin(async move {
+                let r = try_google_scholar_report(c, title, ep).await;
+                (name, pri, r)
+            })),
+            "unpaywall" => {
+                let email = config.email.clone();
+                if email.contains("example.com") || email.contains("example.org") {
+                    futures.push(Box::pin(async move {
+                        (
+                            name,
+                            pri,
+                            Err("skipped — configure resolver.email in config.toml".into()),
+                        )
+                    }));
+                } else {
+                    futures.push(Box::pin(async move {
+                        let r = try_unpaywall(c, doi, &email, ep).await;
+                        (name, pri, r.ok_or_else(|| "no OA PDF for this DOI".into()))
+                    }));
+                }
+            }
+            "crossref" => {
+                let email = config.email.clone();
+                let ua = config.user_agent.clone();
+                futures.push(Box::pin(async move {
+                    let r = try_crossref(c, doi, &email, &ua, ep).await;
+                    (name, pri, r.ok_or_else(|| "no PDF link in metadata".into()))
+                }));
+            }
+            "zenodo" => futures.push(Box::pin(async move {
+                let r = try_zenodo(c, title, ep).await;
+                (name, pri, r.ok_or_else(|| "no result".into()))
+            })),
+            "ssrn" => futures.push(Box::pin(async move {
+                let r = try_ssrn(c, title, ep).await;
+                (name, pri, r.ok_or_else(|| "no result".into()))
+            })),
+            "semantic_scholar" => futures.push(Box::pin(async move {
+                let r = try_semantic_scholar(c, doi, title, ep).await;
+                (name, pri, r.ok_or_else(|| "no OA PDF found".into()))
+            })),
+            _ => {}
+        }
+    }
+
+    let results = futures::future::join_all(futures).await;
+
+    let mut outcomes: Vec<(String, Result<String, String>)> = Vec::new();
+    let mut candidates: Vec<(u8, ResolvedPdf)> = Vec::new();
+
+    for (name, pri, result) in results {
+        match result {
+            Ok(mut pdf) => {
+                if pdf.downloadable {
+                    pdf.downloadable = is_downloadable_cfg(&pdf.url, config);
+                }
+                let url = pdf.url.clone();
+                if pdf.downloadable {
+                    outcomes.push((name, Ok(url)));
+                } else {
+                    outcomes.push((name, Err(format!("found {} but blocked domain", url))));
+                }
+                candidates.push((pri, pdf));
+            }
+            Err(reason) => {
+                outcomes.push((name, Err(reason)));
+            }
+        }
+    }
+
+    candidates.sort_by_key(|(pri, r)| (!r.downloadable, *pri));
+    let pdf = candidates.into_iter().next().map(|(_, r)| r);
+
+    ResolveReport { pdf, outcomes }
+}
+
+/// Google Scholar with error reporting (instead of Option).
+async fn try_google_scholar_report(
+    client: &reqwest::Client,
+    title: Option<&str>,
+    endpoints: &Endpoints,
+) -> Result<ResolvedPdf, String> {
+    let title = title.ok_or("no title provided")?;
+    let resp = client
+        .get(format!("{}/scholar", endpoints.google_scholar))
+        .query(&[("q", &format!("\"{title}\"")), ("num", &"5".to_string())])
+        .header(
+            "User-Agent",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        )
+        .header("Accept", "text/html,application/xhtml+xml")
+        .header("Accept-Language", "en-US,en;q=0.9")
+        .send()
+        .await
+        .map_err(|e| format!("request failed: {e}"))?;
+
+    let status = resp.status();
+    if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+        return Err("rate-limited (429) — try again later".into());
+    }
+    if !status.is_success() {
+        return Err(format!("HTTP {status}"));
+    }
+
+    let html = resp.text().await.map_err(|e| format!("body error: {e}"))?;
+
+    if html.contains("unusual traffic") || html.contains("captcha") {
+        return Err("blocked by captcha".into());
+    }
+
+    let academic_hosts = [
+        ".edu",
+        ".ac.uk",
+        "research.google",
+        "hal.science",
+        "eprint.iacr.org",
+    ];
+
+    // Prefer academic hosts
+    for cap in PDF_HREF_RE.captures_iter(&html) {
+        let url = &cap[1];
+        if academic_hosts.iter().any(|h| url.contains(h)) {
+            return Ok(ResolvedPdf {
+                url: url.into(),
+                source: "google_scholar".into(),
+                downloadable: true,
+            });
+        }
+    }
+    // Fallback: any downloadable PDF
+    for cap in PDF_HREF_RE.captures_iter(&html) {
+        let url = &cap[1];
+        if is_downloadable(url) {
+            return Ok(ResolvedPdf {
+                url: url.into(),
+                source: "google_scholar".into(),
+                downloadable: true,
+            });
+        }
+    }
+    Err("no PDF links found in results".into())
 }
 
 /// Async version with configuration — caller owns the tokio runtime.
@@ -982,7 +1263,7 @@ mod config_tests {
 #[cfg(test)]
 mod mock_tests {
     use super::*;
-    use wiremock::matchers::{method, path_regex};
+    use wiremock::matchers::{method, path, path_regex};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     /// Build a config that enables only the given source, pointing all endpoints
@@ -1691,6 +1972,162 @@ mod mock_tests {
         let result = resolve_pdf_async(Some("10.1234/test"), None, None, &config).await;
         assert!(result.is_none());
     }
+
+    // -----------------------------------------------------------------------
+    // ResolveReport tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn report_arxiv_doi_has_outcome() {
+        let report = resolve_pdf_with_report(
+            Some("10.48550/arXiv.2105.15183"),
+            None,
+            None,
+            &ResolverConfig::default(),
+        );
+        assert!(report.pdf.is_some());
+        assert_eq!(report.pdf.as_ref().unwrap().source, "arxiv");
+        assert!(!report.outcomes.is_empty());
+        assert!(report.outcomes[0].1.is_ok());
+    }
+
+    #[test]
+    fn report_summary_no_pdf_shows_sources() {
+        let report = ResolveReport {
+            pdf: None,
+            outcomes: vec![
+                ("openalex".into(), Err("closed access".into())),
+                ("unpaywall".into(), Err("no email configured".into())),
+            ],
+        };
+        let s = report.summary();
+        assert!(s.contains("No downloadable PDF found"));
+        assert!(s.contains("openalex: closed access"));
+        assert!(s.contains("unpaywall: no email configured"));
+    }
+
+    #[test]
+    fn report_summary_with_pdf_shows_url() {
+        let report = ResolveReport {
+            pdf: Some(ResolvedPdf {
+                url: "https://example.edu/paper.pdf".into(),
+                source: "google_scholar".into(),
+                downloadable: true,
+            }),
+            outcomes: vec![(
+                "google_scholar".into(),
+                Ok("https://example.edu/paper.pdf".into()),
+            )],
+        };
+        let s = report.summary();
+        assert!(s.contains("PDF found via google_scholar"));
+        assert!(s.contains("example.edu/paper.pdf"));
+    }
+
+    #[tokio::test]
+    async fn report_unpaywall_skipped_with_placeholder_email() {
+        let server = MockServer::start().await;
+        // No mock needed — unpaywall should be skipped entirely
+
+        let config = ResolverConfig {
+            sources: vec![SourceEntry::new("unpaywall", true)],
+            email: "biblion@example.com".into(),
+            endpoints: Endpoints {
+                unpaywall: server.uri(),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let report = resolve_pdf_async_with_report(None, None, Some("test"), &config).await;
+        assert!(report.pdf.is_none());
+        let unpaywall_outcome = report.outcomes.iter().find(|(n, _)| n == "unpaywall");
+        assert!(unpaywall_outcome.is_some());
+        assert!(
+            unpaywall_outcome
+                .unwrap()
+                .1
+                .as_ref()
+                .err()
+                .unwrap()
+                .contains("email")
+        );
+    }
+
+    #[tokio::test]
+    async fn report_google_scholar_429_reports_rate_limit() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/scholar"))
+            .respond_with(ResponseTemplate::new(429))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("google_scholar", &server.uri());
+        let report =
+            resolve_pdf_async_with_report(None, None, Some("mutation testing"), &config).await;
+        assert!(report.pdf.is_none());
+        let gs_outcome = report.outcomes.iter().find(|(n, _)| n == "google_scholar");
+        assert!(gs_outcome.is_some());
+        assert!(
+            gs_outcome
+                .unwrap()
+                .1
+                .as_ref()
+                .err()
+                .unwrap()
+                .contains("429")
+        );
+    }
+
+    #[tokio::test]
+    async fn report_openalex_closed_access_reports_reason() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path_regex(r"/works/doi:.*"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "open_access": { "is_oa": false, "oa_status": "closed" }
+            })))
+            .mount(&server)
+            .await;
+
+        let config = single_source_config("openalex", &server.uri());
+        let report = resolve_pdf_async_with_report(Some("10.1234/test"), None, None, &config).await;
+        assert!(report.pdf.is_none());
+        let oa_outcome = report.outcomes.iter().find(|(n, _)| n == "openalex");
+        assert!(oa_outcome.is_some());
+        assert!(oa_outcome.unwrap().1.is_err());
+    }
+
+    #[tokio::test]
+    async fn report_multiple_sources_collects_all_outcomes() {
+        let server = MockServer::start().await;
+        // openalex: 404, core: 404
+        Mock::given(method("GET"))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&server)
+            .await;
+
+        let config = ResolverConfig {
+            sources: vec![
+                SourceEntry::new("openalex", true),
+                SourceEntry::new("core", true),
+            ],
+            endpoints: Endpoints {
+                openalex: server.uri(),
+                core: server.uri(),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let report =
+            resolve_pdf_async_with_report(Some("10.1234/test"), None, Some("test"), &config).await;
+        assert!(report.pdf.is_none());
+        assert_eq!(report.outcomes.len(), 2);
+    }
+
+    // -----------------------------------------------------------------------
+    // Existing tests below
+    // -----------------------------------------------------------------------
 
     #[tokio::test]
     async fn semantic_scholar_blocked_domain_not_downloadable() {
