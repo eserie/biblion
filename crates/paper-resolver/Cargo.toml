@@ -1,6 +1,6 @@
 [package]
 name = "paper-resolver"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.85"
 description = "Concurrent PDF resolver for academic papers — 9 sources (arXiv, OpenAlex, CORE, Google Scholar, Unpaywall, Crossref, Zenodo, SSRN, Semantic Scholar)"
