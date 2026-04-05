@@ -120,6 +120,7 @@ dependencies = [
  "tokio-stream",
  "toml",
  "uuid",
+ "wiremock",
 ]
 
 [[package]]

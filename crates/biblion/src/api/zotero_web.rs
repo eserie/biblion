@@ -23,6 +23,7 @@ use anyhow::{Context, Result};
 use serde_json::Value;
 
 /// Blocking client for the Zotero Web API v3.
+#[derive(Debug)]
 pub struct ZoteroWebClient {
     client: reqwest::blocking::Client,
     api_key: String,
@@ -40,6 +41,18 @@ impl ZoteroWebClient {
                 .expect("Failed to build HTTP client"),
             api_key: api_key.into(),
             base_url,
+        }
+    }
+
+    /// Create a client with a custom base URL (for testing).
+    pub fn with_base_url(api_key: &str, base_url: &str) -> Self {
+        Self {
+            client: reqwest::blocking::Client::builder()
+                .timeout(std::time::Duration::from_secs(60))
+                .build()
+                .expect("Failed to build HTTP client"),
+            api_key: api_key.into(),
+            base_url: base_url.into(),
         }
     }
 
@@ -88,7 +101,7 @@ impl ZoteroWebClient {
     pub fn item_template(&self, item_type: &str) -> Result<Value> {
         let resp = self
             .client
-            .get("https://api.zotero.org/items/new")
+            .get(format!("{}/items/new", self.base_url))
             .query(&[("itemType", item_type)])
             .headers(self.headers())
             .send()?;

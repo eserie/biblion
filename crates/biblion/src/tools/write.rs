@@ -25,11 +25,15 @@ fn get_write_client(ctx: &ServerContext) -> Result<ZoteroWebClient, String> {
         ctx.config.zotero_api_key.as_deref().ok_or_else(|| {
             "Write access requires ZOTERO_API_KEY environment variable.".to_string()
         })?;
-    Ok(ZoteroWebClient::new(
-        api_key,
-        &ctx.config.zotero_library_id,
-        &ctx.config.zotero_library_type,
-    ))
+    if let Some(base_url) = &ctx.config.zotero_api_base_url {
+        Ok(ZoteroWebClient::with_base_url(api_key, base_url))
+    } else {
+        Ok(ZoteroWebClient::new(
+            api_key,
+            &ctx.config.zotero_library_id,
+            &ctx.config.zotero_library_type,
+        ))
+    }
 }
 
 use super::resolve_citekey;
@@ -833,4 +837,524 @@ pub fn zotero_fetch_missing_pdfs(args: &Value, ctx: &ServerContext) -> ToolCallR
     ));
 
     ToolCallResult::text(output)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::{Config, LogLevel};
+    use crate::db::DbPool;
+    use crate::test_helpers::test_zotero_db;
+    use serde_json::json;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    /// Create a test context with writes enabled and a custom API base URL.
+    fn write_ctx_with_base_url(base_url: &str) -> ServerContext {
+        let zdb = test_zotero_db();
+        ServerContext {
+            db: DbPool {
+                zotero: Some(zdb),
+                bbt: None,
+            },
+            config: Config {
+                zotero_sqlite_path: "/tmp/test.sqlite".into(),
+                zotero_storage_path: "/tmp/storage".into(),
+                bbt_migrated_path: "/tmp/bbt".into(),
+                zotero_api_key: Some("test-api-key".into()),
+                zotero_library_id: "12345".into(),
+                zotero_library_type: "user".into(),
+                bbt_url: "http://localhost:23119".into(),
+                log_level: LogLevel::Quiet,
+                writes_enabled: true,
+                resolver: paper_resolver::ResolverConfig::default(),
+                zotero_api_base_url: Some(base_url.into()),
+            },
+        }
+    }
+
+    /// Helper: spin up a tokio runtime and a wiremock MockServer.
+    fn start_mock() -> (tokio::runtime::Runtime, MockServer) {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let server = rt.block_on(MockServer::start());
+        (rt, server)
+    }
+
+    /// Standard mock response for GET /items/{key}.
+    fn item_response(key: &str, version: i64) -> ResponseTemplate {
+        ResponseTemplate::new(200).set_body_json(json!({
+            "key": key,
+            "version": version,
+            "data": {
+                "key": key,
+                "version": version,
+                "itemType": "journalArticle",
+                "title": "Hints on Test Data Selection",
+                "tags": [{"tag": "mutation-testing"}, {"tag": "foundational"}],
+                "collections": ["COL00001"],
+                "creators": [],
+            }
+        }))
+    }
+
+    // -----------------------------------------------------------------------
+    // zotero_create_item — success
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn create_item_success() {
+        let (rt, mock_server) = start_mock();
+
+        rt.block_on(async {
+            Mock::given(method("GET"))
+                .and(path("/items/new"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                    "itemType": "journalArticle",
+                    "title": "",
+                    "creators": [],
+                    "tags": [],
+                    "collections": [],
+                })))
+                .mount(&mock_server)
+                .await;
+
+            Mock::given(method("POST"))
+                .and(path("/items"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                    "successful": {"0": {"key": "NEWKEY01", "version": 1}},
+                    "unchanged": {},
+                    "failed": {}
+                })))
+                .mount(&mock_server)
+                .await;
+        });
+
+        let ctx = write_ctx_with_base_url(&mock_server.uri());
+        let args = json!({
+            "item_type": "journalArticle",
+            "title": "Test Paper",
+        });
+        let result = zotero_create_item(&args, &ctx);
+        assert!(result.is_error.is_none());
+        assert!(result.content[0].text.contains("NEWKEY01"));
+    }
+
+    // -----------------------------------------------------------------------
+    // zotero_create_item — missing params
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn create_item_missing_title() {
+        let (rt, mock_server) = start_mock();
+        let _ = rt;
+        let ctx = write_ctx_with_base_url(&mock_server.uri());
+        let args = json!({"item_type": "journalArticle"});
+        let result = zotero_create_item(&args, &ctx);
+        assert_eq!(result.is_error, Some(true));
+        assert!(result.content[0].text.contains("Missing parameter: title"));
+    }
+
+    #[test]
+    fn create_item_missing_item_type() {
+        let (rt, mock_server) = start_mock();
+        let _ = rt;
+        let ctx = write_ctx_with_base_url(&mock_server.uri());
+        let args = json!({"title": "Test"});
+        let result = zotero_create_item(&args, &ctx);
+        assert_eq!(result.is_error, Some(true));
+        assert!(
+            result.content[0]
+                .text
+                .contains("Missing parameter: item_type")
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // zotero_update_item — success (resolves citekey via SQLite)
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn update_item_success() {
+        let (rt, mock_server) = start_mock();
+
+        rt.block_on(async {
+            Mock::given(method("GET"))
+                .and(path("/items/ABC12345"))
+                .respond_with(item_response("ABC12345", 5))
+                .mount(&mock_server)
+                .await;
+
+            Mock::given(method("PATCH"))
+                .and(path("/items/ABC12345"))
+                .respond_with(ResponseTemplate::new(204))
+                .mount(&mock_server)
+                .await;
+        });
+
+        let ctx = write_ctx_with_base_url(&mock_server.uri());
+        let args = json!({
+            "citekey": "demilloHintsTestData1978",
+            "fields": {"title": "Updated Title"},
+        });
+        let result = zotero_update_item(&args, &ctx);
+        assert!(result.is_error.is_none());
+        assert!(result.content[0].text.contains("updated"));
+    }
+
+    // -----------------------------------------------------------------------
+    // zotero_delete_item — success
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn delete_item_success() {
+        let (rt, mock_server) = start_mock();
+
+        rt.block_on(async {
+            Mock::given(method("GET"))
+                .and(path("/items/ABC12345"))
+                .respond_with(item_response("ABC12345", 5))
+                .mount(&mock_server)
+                .await;
+
+            Mock::given(method("DELETE"))
+                .and(path("/items/ABC12345"))
+                .respond_with(ResponseTemplate::new(204))
+                .mount(&mock_server)
+                .await;
+        });
+
+        let ctx = write_ctx_with_base_url(&mock_server.uri());
+        let args = json!({"citekey": "demilloHintsTestData1978"});
+        let result = zotero_delete_item(&args, &ctx);
+        assert!(result.is_error.is_none());
+        assert!(result.content[0].text.contains("deleted"));
+    }
+
+    // -----------------------------------------------------------------------
+    // zotero_add_tags — success (merges with existing)
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn add_tags_success() {
+        let (rt, mock_server) = start_mock();
+
+        rt.block_on(async {
+            Mock::given(method("GET"))
+                .and(path("/items/ABC12345"))
+                .respond_with(item_response("ABC12345", 5))
+                .mount(&mock_server)
+                .await;
+
+            Mock::given(method("PATCH"))
+                .and(path("/items/ABC12345"))
+                .respond_with(ResponseTemplate::new(204))
+                .mount(&mock_server)
+                .await;
+        });
+
+        let ctx = write_ctx_with_base_url(&mock_server.uri());
+        let args = json!({
+            "citekey": "demilloHintsTestData1978",
+            "tags": ["new-tag", "mutation-testing"],
+        });
+        let result = zotero_add_tags(&args, &ctx);
+        assert!(result.is_error.is_none());
+        assert!(result.content[0].text.contains("Tags added"));
+    }
+
+    // -----------------------------------------------------------------------
+    // zotero_add_note — success
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn add_note_success() {
+        let (rt, mock_server) = start_mock();
+
+        rt.block_on(async {
+            Mock::given(method("POST"))
+                .and(path("/items"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                    "successful": {"0": {"key": "NOTE0002", "version": 1}},
+                    "unchanged": {},
+                    "failed": {}
+                })))
+                .mount(&mock_server)
+                .await;
+        });
+
+        let ctx = write_ctx_with_base_url(&mock_server.uri());
+        let args = json!({
+            "citekey": "demilloHintsTestData1978",
+            "content": "This is a test note.",
+        });
+        let result = zotero_add_note(&args, &ctx);
+        assert!(result.is_error.is_none());
+        assert!(result.content[0].text.contains("Note added"));
+    }
+
+    // -----------------------------------------------------------------------
+    // zotero_create_collection — success
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn create_collection_success() {
+        let (rt, mock_server) = start_mock();
+
+        rt.block_on(async {
+            Mock::given(method("POST"))
+                .and(path("/collections"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                    "successful": {"0": {"key": "NEWCOL01", "version": 1}},
+                    "unchanged": {},
+                    "failed": {}
+                })))
+                .mount(&mock_server)
+                .await;
+        });
+
+        let ctx = write_ctx_with_base_url(&mock_server.uri());
+        let args = json!({"name": "New Collection"});
+        let result = zotero_create_collection(&args, &ctx);
+        assert!(result.is_error.is_none());
+        assert!(result.content[0].text.contains("created"));
+    }
+
+    // -----------------------------------------------------------------------
+    // zotero_create_collection — already exists
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn create_collection_already_exists() {
+        let (rt, mock_server) = start_mock();
+        let _ = rt;
+
+        let ctx = write_ctx_with_base_url(&mock_server.uri());
+        let args = json!({"name": "Mutation Testing"});
+        let result = zotero_create_collection(&args, &ctx);
+        assert!(result.is_error.is_none());
+        assert!(result.content[0].text.contains("already exists"));
+        assert!(result.content[0].text.contains("COL00001"));
+    }
+
+    // -----------------------------------------------------------------------
+    // zotero_add_to_collection — success
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn add_to_collection_success() {
+        let (rt, mock_server) = start_mock();
+
+        rt.block_on(async {
+            Mock::given(method("GET"))
+                .and(path("/items/ABC12345"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                    "key": "ABC12345",
+                    "version": 5,
+                    "data": {
+                        "key": "ABC12345",
+                        "version": 5,
+                        "itemType": "journalArticle",
+                        "title": "Test",
+                        "tags": [],
+                        "collections": [],
+                        "creators": [],
+                    }
+                })))
+                .mount(&mock_server)
+                .await;
+
+            Mock::given(method("PATCH"))
+                .and(path("/items/ABC12345"))
+                .respond_with(ResponseTemplate::new(204))
+                .mount(&mock_server)
+                .await;
+        });
+
+        let ctx = write_ctx_with_base_url(&mock_server.uri());
+        let args = json!({
+            "citekey": "demilloHintsTestData1978",
+            "collection_key": "NEWCOL01",
+        });
+        let result = zotero_add_to_collection(&args, &ctx);
+        assert!(result.is_error.is_none());
+        assert!(result.content[0].text.contains("added to collection"));
+    }
+
+    // -----------------------------------------------------------------------
+    // zotero_add_to_collection — already in collection
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn add_to_collection_already_member() {
+        let (rt, mock_server) = start_mock();
+
+        rt.block_on(async {
+            Mock::given(method("GET"))
+                .and(path("/items/ABC12345"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                    "key": "ABC12345",
+                    "version": 5,
+                    "data": {
+                        "key": "ABC12345",
+                        "version": 5,
+                        "itemType": "journalArticle",
+                        "title": "Test",
+                        "tags": [],
+                        "collections": ["COL00001"],
+                        "creators": [],
+                    }
+                })))
+                .mount(&mock_server)
+                .await;
+        });
+
+        let ctx = write_ctx_with_base_url(&mock_server.uri());
+        let args = json!({
+            "citekey": "demilloHintsTestData1978",
+            "collection_key": "COL00001",
+        });
+        let result = zotero_add_to_collection(&args, &ctx);
+        assert!(result.is_error.is_none());
+        assert!(result.content[0].text.contains("already in collection"));
+    }
+
+    // -----------------------------------------------------------------------
+    // zotero_remove_from_collection — success
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn remove_from_collection_success() {
+        let (rt, mock_server) = start_mock();
+
+        rt.block_on(async {
+            Mock::given(method("GET"))
+                .and(path("/items/ABC12345"))
+                .respond_with(item_response("ABC12345", 5))
+                .mount(&mock_server)
+                .await;
+
+            Mock::given(method("PATCH"))
+                .and(path("/items/ABC12345"))
+                .respond_with(ResponseTemplate::new(204))
+                .mount(&mock_server)
+                .await;
+        });
+
+        let ctx = write_ctx_with_base_url(&mock_server.uri());
+        let args = json!({
+            "citekey": "demilloHintsTestData1978",
+            "collection_key": "COL00001",
+        });
+        let result = zotero_remove_from_collection(&args, &ctx);
+        assert!(result.is_error.is_none());
+        assert!(result.content[0].text.contains("removed from collection"));
+    }
+
+    // -----------------------------------------------------------------------
+    // zotero_merge_items — success
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn merge_items_success() {
+        let (rt, mock_server) = start_mock();
+
+        rt.block_on(async {
+            Mock::given(method("GET"))
+                .and(path("/items/ABC12345"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                    "key": "ABC12345",
+                    "version": 5,
+                    "data": {
+                        "key": "ABC12345",
+                        "itemType": "journalArticle",
+                        "title": "Hints on Test Data Selection",
+                        "tags": [{"tag": "mutation-testing"}],
+                        "collections": ["COL00001"],
+                    }
+                })))
+                .mount(&mock_server)
+                .await;
+
+            Mock::given(method("GET"))
+                .and(path("/items/DEF67890"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                    "key": "DEF67890",
+                    "version": 3,
+                    "data": {
+                        "key": "DEF67890",
+                        "itemType": "book",
+                        "title": "The Art of Testing",
+                        "tags": [{"tag": "foundational"}, {"tag": "testing"}],
+                        "collections": ["COL00002"],
+                    }
+                })))
+                .mount(&mock_server)
+                .await;
+
+            Mock::given(method("PATCH"))
+                .and(path("/items/ABC12345"))
+                .respond_with(ResponseTemplate::new(204))
+                .mount(&mock_server)
+                .await;
+
+            Mock::given(method("DELETE"))
+                .and(path("/items/DEF67890"))
+                .respond_with(ResponseTemplate::new(204))
+                .mount(&mock_server)
+                .await;
+        });
+
+        let ctx = write_ctx_with_base_url(&mock_server.uri());
+        let args = json!({
+            "keep_citekey": "demilloHintsTestData1978",
+            "delete_citekey": "artTesting2020",
+        });
+        let result = zotero_merge_items(&args, &ctx);
+        assert!(result.is_error.is_none());
+        assert!(result.content[0].text.contains("Merged"));
+        assert!(result.content[0].text.contains("Deleted"));
+    }
+
+    // -----------------------------------------------------------------------
+    // writes_disabled — get_write_client returns error
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn writes_disabled_returns_error() {
+        let ctx = crate::test_helpers::test_ctx();
+        let result = get_write_client(&ctx);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Write tools disabled"));
+    }
+
+    // -----------------------------------------------------------------------
+    // missing_api_key — get_write_client returns error
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn missing_api_key_returns_error() {
+        let zdb = test_zotero_db();
+        let ctx = ServerContext {
+            db: DbPool {
+                zotero: Some(zdb),
+                bbt: None,
+            },
+            config: Config {
+                zotero_sqlite_path: "/tmp/test.sqlite".into(),
+                zotero_storage_path: "/tmp/storage".into(),
+                bbt_migrated_path: "/tmp/bbt".into(),
+                zotero_api_key: None,
+                zotero_library_id: "12345".into(),
+                zotero_library_type: "user".into(),
+                bbt_url: "http://localhost:23119".into(),
+                log_level: LogLevel::Quiet,
+                writes_enabled: true,
+                resolver: paper_resolver::ResolverConfig::default(),
+                zotero_api_base_url: None,
+            },
+        };
+        let result = get_write_client(&ctx);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("ZOTERO_API_KEY"));
+    }
 }
