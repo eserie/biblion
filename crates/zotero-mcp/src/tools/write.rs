@@ -718,7 +718,7 @@ pub fn zotero_fetch_missing_pdfs(args: &Value, ctx: &ServerContext) -> ToolCallR
     let mut attached = 0;
 
     for (item_key, doi, title) in &missing {
-        let result = super::pdf::resolve_pdf(
+        let result = paper_resolver::resolve_pdf(
             doi.as_deref(),
             None,
             title.as_deref(),

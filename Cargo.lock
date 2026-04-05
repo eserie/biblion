@@ -803,6 +803,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "paper-resolver"
+version = "0.1.0"
+dependencies = [
+ "regex",
+ "reqwest",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "percent-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1899,6 +1909,7 @@ dependencies = [
  "anyhow",
  "axum",
  "dotenvy",
+ "paper-resolver",
  "regex",
  "reqwest",
  "rusqlite",

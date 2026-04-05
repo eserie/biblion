@@ -17,7 +17,6 @@ pub mod write;
 pub mod format;
 pub mod bibtex;
 pub mod bibliography;
-pub mod pdf;
 
 use serde_json::{json, Value};
 
