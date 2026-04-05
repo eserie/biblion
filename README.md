@@ -1,9 +1,9 @@
 # biblion
 
 [![CI](https://github.com/eserie/biblion/actions/workflows/ci.yml/badge.svg)](https://github.com/eserie/biblion/actions/workflows/ci.yml)
+[![Crates.io](https://img.shields.io/crates/v/biblion)](https://crates.io/crates/biblion)
 [![codecov](https://codecov.io/gh/eserie/biblion/graph/badge.svg)](https://codecov.io/gh/eserie/biblion)
-[![Mutation Score](https://img.shields.io/badge/mutation_score-72%25-green)](https://github.com/eserie/biblion/actions/workflows/mutants.yml)
-[![Rust](https://img.shields.io/badge/rust-2024_edition-orange?logo=rust)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/rust-1.85+-orange?logo=rust)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/protocol-MCP_2024--11--05-purple)](https://modelcontextprotocol.io)
 
