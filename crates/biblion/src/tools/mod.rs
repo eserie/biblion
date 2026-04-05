@@ -301,7 +301,7 @@ pub fn tool_catalog() -> Vec<ToolDefinition> {
         json!({
             "type": "object",
             "properties": {
-                "item_key": { "type": "string", "description": "Zotero item key (e.g. 'ABC12345') or BBT citekey (e.g. 'jiaAnalysisSurveyDevelopment2011')" },
+                "item_key": { "type": "string", "description": "Zotero item key or BBT citekey" },
                 "pdf_url": { "type": "string" },
                 "title": { "type": "string" }
             },
