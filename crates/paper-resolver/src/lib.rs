@@ -2,30 +2,91 @@
 //!
 //! # What it does
 //!
-//! Given a DOI, URL, or title, queries 9 academic sources in parallel and
-//! returns the best downloadable PDF URL. No Zotero, no reference manager
+//! Given a DOI, URL, or title, queries up to 9 academic sources in parallel
+//! and returns the best downloadable PDF URL. No Zotero, no reference manager
 //! dependency — just `(doi, url, title) → Option<ResolvedPdf>`.
 //!
 //! # Sources (by priority)
 //!
-//! 1. **arXiv** — instant DOI/URL pattern matching (no network)
-//! 2. **OpenAlex** — 250M+ works, structured OA location data
-//! 3. **CORE** — 300M+ OA works from institutional repos
-//! 4. **Google Scholar** — widest coverage, university mirrors (risk of rate-limit)
-//! 5. **Unpaywall** — 30M+ OA articles via DOI
-//! 6. **Crossref** — publisher PDF links via DOI
-//! 7. **Zenodo** — cross-disciplinary preprints (CERN)
-//! 8. **SSRN** — finance/economics preprints
-//! 9. **Semantic Scholar** — OA PDFs + disclaimer field parsing
+//! | # | Source | Coverage | Method |
+//! |---|--------|----------|--------|
+//! | 1 | **arXiv** | arXiv papers | Instant DOI/URL pattern match (no network) |
+//! | 2 | **OpenAlex** | 250M+ works | Structured OA location data |
+//! | 3 | **CORE** | 300M+ OA works | Institutional repositories |
+//! | 4 | **Google Scholar** | Widest coverage | HTML scraping (rate-limit risk) |
+//! | 5 | **Unpaywall** | 30M+ OA articles | DOI lookup (requires email) |
+//! | 6 | **Crossref** | Publisher links | DOI metadata |
+//! | 7 | **Zenodo** | Cross-disciplinary | CERN preprint repository |
+//! | 8 | **SSRN** | Finance/economics | Preprint abstracts |
+//! | 9 | **Semantic Scholar** | CS/bio/med | OA PDFs + disclaimer parsing |
 //!
-//! # Usage
+//! # Quick start
 //!
 //! ```no_run
-//! // Sync (creates its own tokio runtime):
+//! // Resolve a PDF by DOI (sync — creates its own tokio runtime):
 //! let result = paper_resolver::resolve_pdf(
-//!     Some("10.1109/TSE.2010.62"), None, Some("mutation testing"),
+//!     Some("10.48550/arXiv.1706.03762"), // DOI
+//!     None,                              // URL
+//!     Some("Attention Is All You Need"), // title (fallback)
+//! );
+//!
+//! if let Some(pdf) = result {
+//!     println!("Found: {} (via {})", pdf.url, pdf.source);
+//!     println!("Downloadable: {}", pdf.downloadable);
+//! }
+//! ```
+//!
+//! # Detailed reporting
+//!
+//! Use [`resolve_pdf_with_report`] to see why each source succeeded or failed:
+//!
+//! ```no_run
+//! let report = paper_resolver::resolve_pdf_with_report(
+//!     Some("10.1109/TSE.2010.62"), None,
+//!     Some("mutation testing"),
+//!     &paper_resolver::ResolverConfig::default(),
+//! );
+//! println!("{}", report.summary());
+//! // PDF found via google_scholar (downloadable: true)
+//! //   https://mutationtesting.uni.lu/TR-09-06.pdf
+//! //
+//! // Sources queried:
+//! //   openalex: no OA location found
+//! //   google_scholar: found https://...
+//! //   unpaywall: skipped — configure resolver.email
+//! //   ...
+//! ```
+//!
+//! # Custom configuration
+//!
+//! ```ignore
+//! use paper_resolver::{ResolverConfig, SourceEntry};
+//!
+//! let mut config = ResolverConfig::default();
+//! config.email = "researcher@university.edu".into();
+//! config.timeout_secs = 10;
+//! config.sources = vec![
+//!     SourceEntry::new("arxiv", true),
+//!     SourceEntry::new("openalex", true),
+//!     SourceEntry::new("unpaywall", true),
+//!     // disable the rest
+//! ];
+//!
+//! let result = paper_resolver::resolve_pdf_with_config(
+//!     Some("10.1234/example"), None, None, &config,
 //! );
 //! ```
+//!
+//! # Design decisions
+//!
+//! - **Concurrent by default**: all enabled sources are queried simultaneously
+//!   via `futures::future::join_all`. First-to-return wins by priority.
+//! - **Blocked domains**: publisher paywalls (IEEE, Springer, Elsevier, etc.)
+//!   are detected and marked `downloadable: false` rather than silently failing.
+//! - **No file I/O**: this crate has zero filesystem dependency. Configuration
+//!   is passed as a struct — the caller owns config file parsing.
+//! - **Standalone**: no Zotero dependency. Usable in any Rust project that
+//!   needs academic PDF resolution.
 
 use regex::Regex;
 use std::sync::LazyLock;
@@ -58,11 +119,23 @@ fn pdf_runtime() -> &'static tokio::runtime::Runtime {
 }
 
 /// Result of PDF URL resolution.
+///
+/// Contains the URL, the source that found it, and whether the URL
+/// points to a directly downloadable file (vs. a paywall landing page).
+///
+/// # Fields
+///
+/// - `url` — the resolved PDF URL (may or may not be directly downloadable)
+/// - `source` — which source found it (e.g., `"arxiv"`, `"openalex"`, `"google_scholar"`)
+/// - `downloadable` — `false` if the URL points to a known paywall domain
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub struct ResolvedPdf {
+    /// The resolved PDF URL.
     pub url: String,
+    /// Which source found this URL (e.g., `"arxiv"`, `"google_scholar"`).
     pub source: String,
+    /// Whether the URL is directly downloadable (`false` for paywall domains).
     pub downloadable: bool,
 }
 

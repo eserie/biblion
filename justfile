@@ -41,6 +41,10 @@ coverage:
 mutants package="paper-resolver":
     cargo mutants --package {{package}} -- --release
 
+# Build API docs with custom Biblion theme
+docs:
+    RUSTDOCFLAGS="--html-in-header docs/rustdoc-header.html" cargo doc --workspace --no-deps
+
 # Start SSE server (for Claude Desktop)
 serve:
     ZOTERO_MCP_TRANSPORT=sse biblion
