@@ -173,6 +173,20 @@ Requires Rust 1.85+ (2024 edition). The workspace contains two crates:
 - **biblion** — the MCP server
 - **paper-resolver** — standalone library for academic PDF resolution (usable independently)
 
+### Task runner (optional)
+
+If you have [just](https://github.com/casey/just) installed:
+
+```bash
+just install    # build + install to ~/.local/bin
+just ci         # full local CI (fmt, lint, test, doc)
+just coverage   # run code coverage
+just check      # run biblion diagnostics
+just serve      # start SSE server for Claude Desktop
+```
+
+Run `just` to see all available recipes.
+
 ## License
 
 MIT
