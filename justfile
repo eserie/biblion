@@ -74,7 +74,7 @@ release version:
     # Update version in Cargo.toml files
     sed -i '' 's/^version = ".*"/version = "{{version}}"/' crates/biblion/Cargo.toml
     sed -i '' 's/^version = ".*"/version = "{{version}}"/' crates/paper-resolver/Cargo.toml
-    sed -i '' 's/paper-resolver = { version = ".*"/paper-resolver = { version = "{{version}}"/' crates/biblion/Cargo.toml
+    sed -i '' 's/paper-resolver = { version = "[^"]*"/paper-resolver = { version = "{{version}}"/' crates/biblion/Cargo.toml
     # Verify it still builds
     cargo check --workspace --quiet
     echo ""
