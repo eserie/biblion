@@ -297,11 +297,11 @@ pub fn tool_catalog() -> Vec<ToolDefinition> {
 
     tools.push(tool(
         "zotero_attach_pdf",
-        "Download a PDF and attach it to an item.",
+        "Download a PDF and attach it to an item. Accepts either a Zotero item key or a BBT citekey.",
         json!({
             "type": "object",
             "properties": {
-                "item_key": { "type": "string" },
+                "item_key": { "type": "string", "description": "Zotero item key (e.g. 'ABC12345') or BBT citekey (e.g. 'jiaAnalysisSurveyDevelopment2011')" },
                 "pdf_url": { "type": "string" },
                 "title": { "type": "string" }
             },

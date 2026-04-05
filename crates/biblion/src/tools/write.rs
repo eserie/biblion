@@ -38,6 +38,28 @@ fn get_write_client(ctx: &ServerContext) -> Result<ZoteroWebClient, String> {
 
 use super::resolve_citekey;
 
+/// Resolve an identifier that may be either a Zotero item key (8-char) or a BBT citekey.
+///
+/// Zotero item keys are exactly 8 uppercase alphanumeric characters (e.g., "ABC12345").
+/// Anything else is treated as a citekey and resolved via BBT.
+fn resolve_item_key(ctx: &ServerContext, key: &str) -> Result<String, String> {
+    // Zotero item keys are exactly 8 chars, uppercase alphanumeric
+    if key.len() == 8
+        && key
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() && !c.is_ascii_lowercase())
+    {
+        // Looks like an item key — verify it exists
+        if let Ok(zdb) = ctx.db.zotero()
+            && let Ok(Some(_)) = zdb.item_by_key(key)
+        {
+            return Ok(key.to_string());
+        }
+    }
+    // Try as citekey
+    resolve_citekey(ctx, key)
+}
+
 // ---------------------------------------------------------------------------
 // BibTeX / Bibliography
 // ---------------------------------------------------------------------------
@@ -658,7 +680,7 @@ pub fn zotero_attach_pdf(args: &Value, ctx: &ServerContext) -> ToolCallResult {
         Err(e) => return ToolCallResult::error(e),
     };
 
-    let item_key = match args.get("item_key").and_then(|v| v.as_str()) {
+    let raw_key = match args.get("item_key").and_then(|v| v.as_str()) {
         Some(k) => k,
         None => return ToolCallResult::error("Missing parameter: item_key".into()),
     };
@@ -668,9 +690,15 @@ pub fn zotero_attach_pdf(args: &Value, ctx: &ServerContext) -> ToolCallResult {
     };
     let title = args.get("title").and_then(|v| v.as_str());
 
+    // Resolve citekey → item_key if needed
+    let item_key = match resolve_item_key(ctx, raw_key) {
+        Ok(k) => k,
+        Err(e) => return ToolCallResult::error(format!("Cannot resolve '{raw_key}': {e}")),
+    };
+
     // Check if item already has a PDF
     if let Ok(zdb) = ctx.db.zotero()
-        && let Ok(Some(item)) = zdb.item_by_key(item_key)
+        && let Ok(Some(item)) = zdb.item_by_key(&item_key)
         && let Ok(atts) = zdb.item_attachments(item.item_id)
         && atts.iter().any(|a| a.content_type == "application/pdf")
     {
@@ -690,7 +718,7 @@ pub fn zotero_attach_pdf(args: &Value, ctx: &ServerContext) -> ToolCallResult {
     }
 
     let display_title = title.unwrap_or("PDF");
-    match client.attach_file(item_key, &tmp_file, display_title) {
+    match client.attach_file(&item_key, &tmp_file, display_title) {
         Ok(_) => {
             let _ = std::fs::remove_file(&tmp_file);
             ToolCallResult::text(format!("PDF attached to {item_key}."))
