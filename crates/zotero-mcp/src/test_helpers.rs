@@ -1,12 +1,9 @@
 //! Shared test helpers — in-memory SQLite fixtures for integration testing.
 
-#![cfg(test)]
-
 use rusqlite::Connection;
 
 use crate::config::{Config, LogLevel};
 use crate::db::DbPool;
-use crate::db::bbt::BbtDb;
 use crate::db::zotero::ZoteroDb;
 use crate::server::ServerContext;
 
