@@ -68,9 +68,19 @@ pub struct ResolvedPdf {
 
 /// A source entry — name + enabled flag.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct SourceEntry {
     pub name: String,
     pub enabled: bool,
+}
+
+impl SourceEntry {
+    pub fn new(name: impl Into<String>, enabled: bool) -> Self {
+        Self {
+            name: name.into(),
+            enabled,
+        }
+    }
 }
 
 /// Configuration for the paper resolver.
@@ -80,6 +90,7 @@ pub struct SourceEntry {
 /// own config files (TOML, env vars, etc.) — paper-resolver has no
 /// file I/O dependency.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct ResolverConfig {
     /// Email for Unpaywall/Crossref polite pool (required by their ToS).
     pub email: String,
@@ -154,22 +165,21 @@ const BLOCKED_DOMAINS: &[&str] = &[
     "silverchair.com",
 ];
 
-fn _is_downloadable_with_config(url: &str, config: &ResolverConfig) -> bool {
-    if BLOCKED_DOMAINS.iter().any(|d| url.contains(d)) {
+fn is_downloadable(url: &str) -> bool {
+    !BLOCKED_DOMAINS.iter().any(|d| url.contains(d))
+}
+
+/// Config-aware version that also checks extra_blocked_domains.
+/// TODO: thread config into all source handlers to use this everywhere.
+#[allow(dead_code)]
+fn is_downloadable_cfg(url: &str, config: &ResolverConfig) -> bool {
+    if !is_downloadable(url) {
         return false;
     }
-    if config
+    !config
         .extra_blocked_domains
         .iter()
         .any(|d| url.contains(d.as_str()))
-    {
-        return false;
-    }
-    true
-}
-
-fn is_downloadable(url: &str) -> bool {
-    !BLOCKED_DOMAINS.iter().any(|d| url.contains(d))
 }
 
 /// Resolve a PDF URL using all available sources (default config).
@@ -257,12 +267,19 @@ pub async fn resolve_pdf_async(
             "google_scholar" => futures.push(Box::pin(async move {
                 try_google_scholar(c, title).await.map(|r| (pri, r))
             })),
-            "unpaywall" => futures.push(Box::pin(async move {
-                try_unpaywall(c, doi).await.map(|r| (pri, r))
-            })),
-            "crossref" => futures.push(Box::pin(async move {
-                try_crossref(c, doi).await.map(|r| (pri, r))
-            })),
+            "unpaywall" => {
+                let email = config.email.clone();
+                futures.push(Box::pin(async move {
+                    try_unpaywall(c, doi, &email).await.map(|r| (pri, r))
+                }))
+            }
+            "crossref" => {
+                let email = config.email.clone();
+                let ua = config.user_agent.clone();
+                futures.push(Box::pin(async move {
+                    try_crossref(c, doi, &email, &ua).await.map(|r| (pri, r))
+                }))
+            }
             "zenodo" => futures.push(Box::pin(async move {
                 try_zenodo(c, title).await.map(|r| (pri, r))
             })),
@@ -469,11 +486,15 @@ async fn try_google_scholar(client: &reqwest::Client, title: Option<&str>) -> Op
 // Unpaywall
 // ---------------------------------------------------------------------------
 
-async fn try_unpaywall(client: &reqwest::Client, doi: Option<&str>) -> Option<ResolvedPdf> {
+async fn try_unpaywall(
+    client: &reqwest::Client,
+    doi: Option<&str>,
+    email: &str,
+) -> Option<ResolvedPdf> {
     let doi = doi?;
     let resp = client
         .get(format!("https://api.unpaywall.org/v2/{doi}"))
-        .query(&[("email", "zotero-mcp@example.com")])
+        .query(&[("email", email)])
         .send()
         .await
         .ok()?;
@@ -513,14 +534,16 @@ async fn try_unpaywall(client: &reqwest::Client, doi: Option<&str>) -> Option<Re
 // Crossref
 // ---------------------------------------------------------------------------
 
-async fn try_crossref(client: &reqwest::Client, doi: Option<&str>) -> Option<ResolvedPdf> {
+async fn try_crossref(
+    client: &reqwest::Client,
+    doi: Option<&str>,
+    email: &str,
+    user_agent: &str,
+) -> Option<ResolvedPdf> {
     let doi = doi?;
     let resp = client
         .get(format!("https://api.crossref.org/works/{doi}"))
-        .header(
-            "User-Agent",
-            "ZoteroMCP/0.1 (mailto:zotero-mcp@example.com)",
-        )
+        .header("User-Agent", format!("{user_agent} (mailto:{email})"))
         .send()
         .await
         .ok()?;

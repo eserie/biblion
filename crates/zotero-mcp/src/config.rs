@@ -185,7 +185,7 @@ fn load_resolver_config() -> paper_resolver::ResolverConfig {
                 .filter_map(|s| {
                     let name = s.get("name")?.as_str()?.to_string();
                     let enabled = s.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true);
-                    Some(paper_resolver::SourceEntry { name, enabled })
+                    Some(paper_resolver::SourceEntry::new(name, enabled))
                 })
                 .collect();
         }
@@ -216,7 +216,7 @@ mod tests {
             zotero_storage_path: PathBuf::from("/Users/test/Zotero/storage"),
             bbt_migrated_path: PathBuf::from("/Users/test/Zotero/better-bibtex.migrated"),
             zotero_api_key: None,
-            zotero_library_id: "7292316".into(),
+            zotero_library_id: "12345".into(),
             zotero_library_type: "user".into(),
             bbt_url: "http://localhost:23119/better-bibtex/json-rpc".into(),
             log_level: LogLevel::Info,
