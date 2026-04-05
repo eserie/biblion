@@ -227,6 +227,7 @@ mod tests {
                 bbt_url: "http://localhost:23119/better-bibtex/json-rpc".into(),
                 log_level: LogLevel::Quiet,
                 writes_enabled: false,
+                resolver: paper_resolver::ResolverConfig::default(),
             },
         }
     }

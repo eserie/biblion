@@ -66,7 +66,82 @@ pub struct ResolvedPdf {
     pub downloadable: bool,
 }
 
-/// Domains known to block programmatic downloads.
+/// A source entry — name + enabled flag.
+#[derive(Debug, Clone)]
+pub struct SourceEntry {
+    pub name: String,
+    pub enabled: bool,
+}
+
+/// Configuration for the paper resolver.
+///
+/// Controls which sources are queried, their priority (order in the vec),
+/// timeouts, and API identification. Callers construct this from their
+/// own config files (TOML, env vars, etc.) — paper-resolver has no
+/// file I/O dependency.
+#[derive(Debug, Clone)]
+pub struct ResolverConfig {
+    /// Email for Unpaywall/Crossref polite pool (required by their ToS).
+    pub email: String,
+    /// User-Agent string for HTTP requests.
+    pub user_agent: String,
+    /// HTTP request timeout in seconds.
+    pub timeout_secs: u64,
+    /// Ordered list of sources. Position = priority (first = highest).
+    /// Disabled sources are skipped.
+    pub sources: Vec<SourceEntry>,
+    /// Extra domains to treat as non-downloadable (appended to defaults).
+    pub extra_blocked_domains: Vec<String>,
+}
+
+/// All available source names.
+pub const SOURCE_NAMES: &[&str] = &[
+    "arxiv",
+    "openalex",
+    "core",
+    "google_scholar",
+    "unpaywall",
+    "crossref",
+    "zenodo",
+    "ssrn",
+    "semantic_scholar",
+];
+
+impl Default for ResolverConfig {
+    fn default() -> Self {
+        Self {
+            email: "zotero-mcp@example.com".into(),
+            user_agent: "zotero-mcp/0.1".into(),
+            timeout_secs: 20,
+            sources: SOURCE_NAMES
+                .iter()
+                .map(|&name| SourceEntry {
+                    name: name.into(),
+                    enabled: true,
+                })
+                .collect(),
+            extra_blocked_domains: vec![],
+        }
+    }
+}
+
+impl ResolverConfig {
+    /// Check if a source is enabled by name.
+    pub fn is_enabled(&self, name: &str) -> bool {
+        self.sources.iter().any(|s| s.name == name && s.enabled)
+    }
+
+    /// Get the priority (position index) for a source.
+    pub fn priority(&self, name: &str) -> u8 {
+        self.sources
+            .iter()
+            .position(|s| s.name == name)
+            .map(|p| (p + 1) as u8)
+            .unwrap_or(99)
+    }
+}
+
+/// Default domains known to block programmatic downloads.
 const BLOCKED_DOMAINS: &[&str] = &[
     "academic.oup.com",
     "wiley.com",
@@ -79,92 +154,133 @@ const BLOCKED_DOMAINS: &[&str] = &[
     "silverchair.com",
 ];
 
+fn is_downloadable_with_config(url: &str, config: &ResolverConfig) -> bool {
+    if BLOCKED_DOMAINS.iter().any(|d| url.contains(d)) {
+        return false;
+    }
+    if config
+        .extra_blocked_domains
+        .iter()
+        .any(|d| url.contains(d.as_str()))
+    {
+        return false;
+    }
+    true
+}
+
 fn is_downloadable(url: &str) -> bool {
     !BLOCKED_DOMAINS.iter().any(|d| url.contains(d))
 }
 
-/// Resolve a PDF URL using all available sources.
+/// Resolve a PDF URL using all available sources (default config).
 ///
-/// This creates a temporary tokio runtime for the concurrent HTTP calls.
-/// Called from the synchronous tool dispatch — the runtime is dropped after.
+/// Convenience wrapper that uses [`ResolverConfig::default()`].
+/// For custom configuration, use [`resolve_pdf_with_config`].
 pub fn resolve_pdf(
     doi: Option<&str>,
     url: Option<&str>,
     title: Option<&str>,
 ) -> Option<ResolvedPdf> {
+    resolve_pdf_with_config(doi, url, title, &ResolverConfig::default())
+}
+
+/// Resolve a PDF URL with custom configuration.
+///
+/// Sync version — creates a tokio runtime internally.
+/// For async callers, use [`resolve_pdf_async`].
+pub fn resolve_pdf_with_config(
+    doi: Option<&str>,
+    url: Option<&str>,
+    title: Option<&str>,
+    config: &ResolverConfig,
+) -> Option<ResolvedPdf> {
     // 1. arXiv — instant, no network
-    if let Some(doi) = doi
-        && let Some(id) = doi_to_arxiv_id(doi)
-    {
-        return Some(ResolvedPdf {
-            url: format!("https://arxiv.org/pdf/{id}.pdf"),
-            source: "arxiv".into(),
-            downloadable: true,
-        });
-    }
-    if let Some(url) = url
-        && let Some(id) = url_to_arxiv_id(url)
-    {
-        return Some(ResolvedPdf {
-            url: format!("https://arxiv.org/pdf/{id}.pdf"),
-            source: "arxiv".into(),
-            downloadable: true,
-        });
+    if config.is_enabled("arxiv") {
+        if let Some(doi) = doi
+            && let Some(id) = doi_to_arxiv_id(doi)
+        {
+            return Some(ResolvedPdf {
+                url: format!("https://arxiv.org/pdf/{id}.pdf"),
+                source: "arxiv".into(),
+                downloadable: true,
+            });
+        }
+        if let Some(url) = url
+            && let Some(id) = url_to_arxiv_id(url)
+        {
+            return Some(ResolvedPdf {
+                url: format!("https://arxiv.org/pdf/{id}.pdf"),
+                source: "arxiv".into(),
+                downloadable: true,
+            });
+        }
     }
 
     // 2-9. Concurrent HTTP queries via tokio (shared runtime)
-    pdf_runtime().block_on(resolve_pdf_async(doi, title))
+    pdf_runtime().block_on(resolve_pdf_async(doi, title, config))
 }
 
-/// Async version — caller owns the tokio runtime.
+/// Async version with configuration — caller owns the tokio runtime.
 ///
-/// Use this when you already have a tokio runtime (e.g., in an async server).
-/// For synchronous callers, use [`resolve_pdf`] instead.
-pub async fn resolve_pdf_async(doi: Option<&str>, title: Option<&str>) -> Option<ResolvedPdf> {
+/// All enabled sources are queried concurrently. Disabled sources are skipped.
+/// Source priority is determined by position in `config.sources` (first = highest).
+pub async fn resolve_pdf_async(
+    doi: Option<&str>,
+    title: Option<&str>,
+    config: &ResolverConfig,
+) -> Option<ResolvedPdf> {
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(20))
+        .timeout(std::time::Duration::from_secs(config.timeout_secs))
         .redirect(reqwest::redirect::Policy::limited(10))
         .build()
         .ok()?;
 
-    // Fire all sources concurrently
-    let (openalex, core, scholar, unpaywall, crossref, zenodo, ssrn, semantic) = tokio::join!(
-        try_openalex(&client, doi, title),
-        try_core(&client, doi, title),
-        try_google_scholar(&client, title),
-        try_unpaywall(&client, doi),
-        try_crossref(&client, doi),
-        try_zenodo(&client, title),
-        try_ssrn(&client, title),
-        try_semantic_scholar(&client, doi, title),
-    );
+    // Fire enabled sources concurrently via join_all pattern
+    // Each future returns Option<(priority, ResolvedPdf)>
+    let mut futures: Vec<
+        std::pin::Pin<Box<dyn std::future::Future<Output = Option<(u8, ResolvedPdf)>> + Send + '_>>,
+    > = Vec::new();
 
-    // Collect results with priorities
-    let mut candidates: Vec<(u8, ResolvedPdf)> = Vec::new();
-    if let Some(r) = openalex {
-        candidates.push((2, r));
+    for source in &config.sources {
+        if !source.enabled {
+            continue;
+        }
+        let pri = config.priority(&source.name);
+        let c = &client;
+        match source.name.as_str() {
+            "arxiv" => {} // Already handled synchronously above
+            "openalex" => futures.push(Box::pin(async move {
+                try_openalex(c, doi, title).await.map(|r| (pri, r))
+            })),
+            "core" => futures.push(Box::pin(async move {
+                try_core(c, doi, title).await.map(|r| (pri, r))
+            })),
+            "google_scholar" => futures.push(Box::pin(async move {
+                try_google_scholar(c, title).await.map(|r| (pri, r))
+            })),
+            "unpaywall" => futures.push(Box::pin(async move {
+                try_unpaywall(c, doi).await.map(|r| (pri, r))
+            })),
+            "crossref" => futures.push(Box::pin(async move {
+                try_crossref(c, doi).await.map(|r| (pri, r))
+            })),
+            "zenodo" => futures.push(Box::pin(async move {
+                try_zenodo(c, title).await.map(|r| (pri, r))
+            })),
+            "ssrn" => futures.push(Box::pin(async move {
+                try_ssrn(c, title).await.map(|r| (pri, r))
+            })),
+            "semantic_scholar" => futures.push(Box::pin(async move {
+                try_semantic_scholar(c, doi, title).await.map(|r| (pri, r))
+            })),
+            _ => {} // Unknown source name, skip
+        }
     }
-    if let Some(r) = core {
-        candidates.push((3, r));
-    }
-    if let Some(r) = scholar {
-        candidates.push((4, r));
-    }
-    if let Some(r) = unpaywall {
-        candidates.push((5, r));
-    }
-    if let Some(r) = crossref {
-        candidates.push((6, r));
-    }
-    if let Some(r) = zenodo {
-        candidates.push((7, r));
-    }
-    if let Some(r) = ssrn {
-        candidates.push((8, r));
-    }
-    if let Some(r) = semantic {
-        candidates.push((9, r));
-    }
+
+    let results = futures::future::join_all(futures).await;
+
+    // Collect successful results
+    let mut candidates: Vec<(u8, ResolvedPdf)> = results.into_iter().flatten().collect();
 
     // Prefer downloadable, then highest priority (lowest number)
     candidates.sort_by_key(|(pri, r)| (!r.downloadable, *pri));

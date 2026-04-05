@@ -1,10 +1,9 @@
 # zotero-mcp
 
+[![CI](https://github.com/eserie/zotero-mcp-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/eserie/zotero-mcp-rs/actions/workflows/ci.yml)
 [![Rust](https://img.shields.io/badge/rust-2024_edition-orange?logo=rust)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-97_passing-brightgreen)]()
 [![MCP](https://img.shields.io/badge/protocol-MCP_2024--11--05-purple)](https://modelcontextprotocol.io)
-[![Binary](https://img.shields.io/badge/binary-5.8MB-informational)]()
 
 High-performance MCP server that gives LLMs sub-millisecond access to your Zotero library. Rust. Direct SQLite. No plugins required.
 

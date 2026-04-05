@@ -177,6 +177,7 @@ mod tests {
                 bbt_url: "http://localhost:23119".into(),
                 log_level: crate::config::LogLevel::Quiet,
                 writes_enabled: false,
+                resolver: paper_resolver::ResolverConfig::default(),
             },
         }
     }

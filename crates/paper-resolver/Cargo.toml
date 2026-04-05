@@ -11,5 +11,6 @@ categories = ["web-programming", "science"]
 [dependencies]
 reqwest = { version = "0.12", features = ["json"] }
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
+futures = "0.3"
 serde_json = "1"
 regex = "1"

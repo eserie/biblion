@@ -15,6 +15,7 @@
 pub mod bibliography;
 pub mod bibtex;
 pub mod format;
+pub mod paper;
 pub mod read;
 pub mod write;
 
@@ -321,6 +322,41 @@ pub fn tool_catalog() -> Vec<ToolDefinition> {
         }),
     ));
 
+    // --- Paper search tools (standalone, no Zotero item needed) ---
+    tools.push(tool(
+        "paper_resolve_pdf",
+        "Find an open-access PDF URL for a paper by DOI, title, or URL. Queries 9 academic sources concurrently.",
+        json!({
+            "type": "object",
+            "properties": {
+                "doi": { "type": "string", "description": "Digital Object Identifier (e.g., '10.1109/TSE.2010.62')" },
+                "title": { "type": "string", "description": "Paper title" },
+                "url": { "type": "string", "description": "Paper URL (e.g., arXiv link)" }
+            }
+        }),
+    ));
+
+    tools.push(tool(
+        "paper_search",
+        "Search for an open-access PDF by title across academic sources.",
+        json!({
+            "type": "object",
+            "properties": {
+                "query": { "type": "string", "description": "Search query (paper title or keywords)" }
+            },
+            "required": ["query"]
+        }),
+    ));
+
+    tools.push(tool(
+        "paper_source_status",
+        "Show configured paper resolver sources, their priority, and status.",
+        json!({
+            "type": "object",
+            "properties": {}
+        }),
+    ));
+
     tools
 }
 
@@ -380,6 +416,12 @@ pub fn handle_tool_call(name: &str, args: &Value, ctx: &ServerContext) -> ToolCa
         "zotero_merge_items" => write::zotero_merge_items(args, ctx),
         "zotero_attach_pdf" => write::zotero_attach_pdf(args, ctx),
         "zotero_fetch_missing_pdfs" => write::zotero_fetch_missing_pdfs(args, ctx),
+
+        // Paper search tools (standalone, no Zotero item needed)
+        "paper_resolve_pdf" => paper::paper_resolve_pdf(args, ctx),
+        "paper_search" => paper::paper_search(args, ctx),
+        "paper_source_status" => paper::paper_source_status(ctx),
+
         _ => ToolCallResult::error(format!("Unknown tool: {name}")),
     }
 }
@@ -425,6 +467,7 @@ mod tests {
                 bbt_url: "http://localhost:23119".into(),
                 log_level: crate::config::LogLevel::Quiet,
                 writes_enabled: false,
+                resolver: paper_resolver::ResolverConfig::default(),
             },
         };
         let result = handle_tool_call("nonexistent", &json!({}), &ctx);

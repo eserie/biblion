@@ -61,6 +61,9 @@ pub struct Config {
     /// Whether write tools are enabled (default: false for safety).
     /// Set ZOTERO_MCP_ENABLE_WRITES=true to enable.
     pub writes_enabled: bool,
+    /// Paper resolver configuration (sources, timeouts, etc.).
+    /// Loaded from TOML config file if present, otherwise defaults.
+    pub resolver: paper_resolver::ResolverConfig,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -107,6 +110,7 @@ impl Config {
             writes_enabled: std::env::var("ZOTERO_MCP_ENABLE_WRITES")
                 .map(|v| v == "true" || v == "1")
                 .unwrap_or(false),
+            resolver: load_resolver_config(),
         }
     }
 
@@ -120,6 +124,83 @@ fn env_path(var: &str, default: &str) -> PathBuf {
     std::env::var(var)
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from(default))
+}
+
+/// Load resolver config from TOML file if present, otherwise defaults.
+///
+/// Looks for config at:
+/// 1. `$ZOTERO_MCP_CONFIG` (if set)
+/// 2. `~/.config/zotero-mcp/config.toml`
+fn load_resolver_config() -> paper_resolver::ResolverConfig {
+    let config_path = std::env::var("ZOTERO_MCP_CONFIG")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| {
+            let home = std::env::var("HOME").unwrap_or_default();
+            PathBuf::from(format!("{home}/.config/zotero-mcp/config.toml"))
+        });
+
+    if !config_path.exists() {
+        return paper_resolver::ResolverConfig::default();
+    }
+
+    let content = match std::fs::read_to_string(&config_path) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!(
+                "[zotero-mcp] Warning: cannot read config file {}: {e}",
+                config_path.display()
+            );
+            return paper_resolver::ResolverConfig::default();
+        }
+    };
+
+    let table: toml::Table = match content.parse() {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!(
+                "[zotero-mcp] Warning: invalid TOML in {}: {e}",
+                config_path.display()
+            );
+            return paper_resolver::ResolverConfig::default();
+        }
+    };
+
+    let mut config = paper_resolver::ResolverConfig::default();
+
+    if let Some(resolver) = table.get("resolver").and_then(|v| v.as_table()) {
+        if let Some(email) = resolver.get("email").and_then(|v| v.as_str()) {
+            config.email = email.into();
+        }
+        if let Some(ua) = resolver.get("user_agent").and_then(|v| v.as_str()) {
+            config.user_agent = ua.into();
+        }
+        if let Some(timeout) = resolver.get("timeout_secs").and_then(|v| v.as_integer()) {
+            config.timeout_secs = timeout as u64;
+        }
+
+        // Source configuration — order in TOML = priority
+        if let Some(sources) = resolver.get("sources").and_then(|v| v.as_array()) {
+            config.sources = sources
+                .iter()
+                .filter_map(|s| {
+                    let name = s.get("name")?.as_str()?.to_string();
+                    let enabled = s.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true);
+                    Some(paper_resolver::SourceEntry { name, enabled })
+                })
+                .collect();
+        }
+
+        // Extra blocked domains
+        if let Some(blocked) = resolver.get("blocked_domains").and_then(|v| v.as_table())
+            && let Some(extra) = blocked.get("extra").and_then(|v| v.as_array()) {
+                config.extra_blocked_domains = extra
+                    .iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect();
+            }
+    }
+
+    config
 }
 
 #[cfg(test)]
@@ -139,6 +220,7 @@ mod tests {
             bbt_url: "http://localhost:23119/better-bibtex/json-rpc".into(),
             log_level: LogLevel::Info,
             writes_enabled: false,
+            resolver: paper_resolver::ResolverConfig::default(),
         };
         assert!(!config.has_write_access());
         assert!(
@@ -162,6 +244,7 @@ mod tests {
             bbt_url: "http://localhost:23119/better-bibtex/json-rpc".into(),
             log_level: LogLevel::Quiet,
             writes_enabled: false,
+            resolver: paper_resolver::ResolverConfig::default(),
         };
         assert!(config.has_write_access());
     }
