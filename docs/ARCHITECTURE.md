@@ -70,6 +70,17 @@ Biblion does NOT compute hashes, deduplicate files, or manage
 cross-system identity. It reads what Zotero stored and exposes it
 through a universal protocol (MCP) that any consumer can use.
 
+## Agent auto-description
+
+Agents receive instructions on MCP connection via the `instructions`
+field in the `initialize` response. The content comes from
+[`docs/MCP_INSTRUCTIONS.md`](MCP_INSTRUCTIONS.md), embedded into the
+binary at compile time via `include_str!` in `server.rs`.
+
+**When adding or changing tools, always update `docs/MCP_INSTRUCTIONS.md`.**
+This is the single source of truth for what agents see. It is compiled
+into the binary — no external file needed at runtime.
+
 ## How to add a new tool
 
 1. **Add handler** in `tools/read.rs` (or `write.rs` / `paper.rs`):

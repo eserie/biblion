@@ -67,6 +67,7 @@ just release X.Y.Z # Tag + push (triggers CI build + publish)
 1. Handler in `crates/biblion/src/tools/{read,write,paper}.rs`
 2. Catalog entry in `tools/mod.rs` → `tool_catalog()`
 3. Dispatch arm in `tools/mod.rs` → `handle_tool_call()`
+4. **Update `docs/MCP_INSTRUCTIONS.md`** — agents see this on connect (compiled into the binary via `include_str!`)
 
 ### Adding a new PDF source
 1. Async handler `try_my_source()` in `crates/paper-resolver/src/lib.rs`
