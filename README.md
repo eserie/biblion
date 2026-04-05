@@ -176,6 +176,20 @@ Then in Claude Desktop settings:
 }
 ```
 
+## FAQ
+
+**Is there a vector database for semantic search?**
+
+No. Biblion does pure SQL queries against Zotero's local SQLite database — no embeddings, no indexing pipeline, no vector store. The LLM itself provides the semantic layer: it interprets your natural-language question and translates it into the right tool calls (search by title, filter by tag, browse collections). Biblion is just a fast, structured bridge to your data. This is why queries return in under a millisecond.
+
+**Does Zotero need to be running?**
+
+No. Biblion reads the SQLite file directly. Zotero can be closed — or not even installed, as long as the database exists.
+
+**Are write operations safe?**
+
+Write tools are disabled by default. When enabled, they go through the official Zotero Web API — Biblion never writes to the SQLite file directly.
+
 ## Building from source
 
 ```bash
