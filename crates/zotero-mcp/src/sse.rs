@@ -169,7 +169,7 @@ mod tests {
                 zotero_library_id: "1".into(),
                 zotero_library_type: "user".into(),
                 bbt_url: "http://localhost:23119".into(),
-                log_level: crate::config::LogLevel::Quiet,
+                log_level: crate::config::LogLevel::Quiet, writes_enabled: false,
             },
         }
     }

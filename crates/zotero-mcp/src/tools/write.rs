@@ -16,13 +16,16 @@ use crate::api::zotero_web::ZoteroWebClient;
 use crate::protocol::ToolCallResult;
 use crate::server::ServerContext;
 
-/// Get or create the Zotero Web API client. Returns error if no API key.
+/// Get write client. Checks both write-gate flag and API key.
 fn get_write_client(ctx: &ServerContext) -> Result<ZoteroWebClient, String> {
+    if !ctx.config.writes_enabled {
+        return Err("Write tools disabled. Set ZOTERO_MCP_ENABLE_WRITES=true to enable.".into());
+    }
     let api_key = ctx
         .config
         .zotero_api_key
         .as_deref()
-        .ok_or_else(|| "Write access disabled. Set ZOTERO_API_KEY environment variable.".to_string())?;
+        .ok_or_else(|| "Write access requires ZOTERO_API_KEY environment variable.".to_string())?;
     Ok(ZoteroWebClient::new(
         api_key,
         &ctx.config.zotero_library_id,

@@ -218,7 +218,7 @@ mod tests {
                 zotero_library_id: "1".into(),
                 zotero_library_type: "user".into(),
                 bbt_url: "http://localhost:23119/better-bibtex/json-rpc".into(),
-                log_level: LogLevel::Quiet,
+                log_level: LogLevel::Quiet, writes_enabled: false,
             },
         }
     }

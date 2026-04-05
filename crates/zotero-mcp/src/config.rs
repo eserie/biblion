@@ -58,6 +58,9 @@ pub struct Config {
     pub bbt_url: String,
     /// Log level for stderr diagnostics.
     pub log_level: LogLevel,
+    /// Whether write tools are enabled (default: false for safety).
+    /// Set ZOTERO_MCP_ENABLE_WRITES=true to enable.
+    pub writes_enabled: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -107,6 +110,9 @@ impl Config {
                 "quiet" | "silent" => LogLevel::Quiet,
                 _ => LogLevel::Info,
             },
+            writes_enabled: std::env::var("ZOTERO_MCP_ENABLE_WRITES")
+                .map(|v| v == "true" || v == "1")
+                .unwrap_or(false),
         }
     }
 
@@ -138,6 +144,7 @@ mod tests {
             zotero_library_type: "user".into(),
             bbt_url: "http://localhost:23119/better-bibtex/json-rpc".into(),
             log_level: LogLevel::Info,
+            writes_enabled: false,
         };
         assert!(!config.has_write_access());
         assert!(config.zotero_sqlite_path.to_str().unwrap().ends_with("zotero.sqlite"));
@@ -153,7 +160,7 @@ mod tests {
             zotero_library_id: "1".into(),
             zotero_library_type: "user".into(),
             bbt_url: "http://localhost:23119/better-bibtex/json-rpc".into(),
-            log_level: LogLevel::Quiet,
+            log_level: LogLevel::Quiet, writes_enabled: false,
         };
         assert!(config.has_write_access());
     }

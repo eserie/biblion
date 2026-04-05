@@ -6,39 +6,13 @@
 //!
 //! # Transports
 //!
-//! Supports two MCP transports:
-//!
 //! - **stdio** (default) — pipe-based, launched by Claude Code CLI.
-//!   Zero overhead, one process per session.
+//! - **SSE** — HTTP daemon for Claude Desktop. Set `ZOTERO_MCP_TRANSPORT=sse`.
 //!
-//! - **SSE** — HTTP-based, persistent daemon. For Claude desktop app,
-//!   IDE extensions, or multiple concurrent clients.
-//!   Set `ZOTERO_MCP_TRANSPORT=sse` to enable.
+//! # Subcommands
 //!
-//! # Architecture
-//!
-//! ```text
-//! Claude ←stdio/sse→ zotero-mcp (this binary)
-//!                         │
-//!              ┌──────────┼──────────┐
-//!              │          │          │
-//!         Read Tools   Write Tools  PDF Resolver
-//!         (sync SQLite) (reqwest)   (tokio async)
-//!              │          │          │
-//!         zotero.sqlite  Zotero    9 sources
-//!         bbt.migrated   Web API   concurrent
-//! ```
-//!
-//! # Environment variables
-//!
-//! | Variable | Default | Description |
-//! |----------|---------|-------------|
-//! | `ZOTERO_MCP_TRANSPORT` | `stdio` | Transport: `stdio` or `sse` |
-//! | `ZOTERO_MCP_HOST` | `127.0.0.1` | SSE listen address |
-//! | `ZOTERO_MCP_PORT` | `23120` | SSE listen port |
-//! | `ZOTERO_API_KEY` | (none) | Required for write operations |
-//! | `ZOTERO_SQLITE_PATH` | `~/Zotero/zotero.sqlite` | Zotero database |
-//! | `BBT_MIGRATED_PATH` | `~/Zotero/better-bibtex.migrated` | BBT citekeys |
+//! - `zotero-mcp` — run MCP server (default)
+//! - `zotero-mcp check` — print diagnostics and exit
 
 mod api;
 mod config;
@@ -51,9 +25,13 @@ mod tools;
 use anyhow::Result;
 
 fn main() -> Result<()> {
-    let config = config::Config::from_env();
+    // Check for "check" subcommand
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() > 1 && args[1] == "check" {
+        return run_check();
+    }
 
-    // Open both databases at startup (non-fatal if missing)
+    let config = config::Config::from_env();
     let db = db::DbPool::open(&config.zotero_sqlite_path, &config.bbt_migrated_path);
 
     let transport = std::env::var("ZOTERO_MCP_TRANSPORT")
@@ -75,4 +53,71 @@ fn main() -> Result<()> {
             server::run_stdio(&ctx)
         }
     }
+}
+
+/// Diagnostic subcommand: print library info and exit.
+fn run_check() -> Result<()> {
+    let config = config::Config::from_env();
+    let db = db::DbPool::open(&config.zotero_sqlite_path, &config.bbt_migrated_path);
+
+    println!("zotero-mcp v{}", env!("CARGO_PKG_VERSION"));
+    println!();
+
+    // Zotero database
+    match &db.zotero {
+        Some(zdb) => {
+            let size = std::fs::metadata(&config.zotero_sqlite_path)
+                .map(|m| m.len() / 1_048_576)
+                .unwrap_or(0);
+            let items = zdb.item_count().unwrap_or(0);
+            let colls = zdb.collection_count().unwrap_or(0);
+            println!(
+                "Zotero database: {} ({} MB, {} items, {} collections)",
+                config.zotero_sqlite_path.display(),
+                size,
+                items,
+                colls
+            );
+        }
+        None => {
+            println!(
+                "Zotero database: NOT FOUND at {}",
+                config.zotero_sqlite_path.display()
+            );
+        }
+    }
+
+    // BBT database
+    match &db.bbt {
+        Some(bbt) => {
+            let count = bbt.all_citekeys().map(|m| m.len()).unwrap_or(0);
+            println!(
+                "BBT database:    {} ({} citekeys)",
+                config.bbt_migrated_path.display(),
+                count
+            );
+        }
+        None => {
+            println!(
+                "BBT database:    NOT FOUND at {}",
+                config.bbt_migrated_path.display()
+            );
+        }
+    }
+
+    // Write access
+    println!();
+    if config.writes_enabled && config.has_write_access() {
+        println!("Write access:    enabled (API key set, writes enabled)");
+    } else if config.has_write_access() {
+        println!("Write access:    disabled (API key set, but ZOTERO_MCP_ENABLE_WRITES not set)");
+    } else {
+        println!("Write access:    disabled (no ZOTERO_API_KEY)");
+    }
+
+    // Transport
+    let transport = std::env::var("ZOTERO_MCP_TRANSPORT").unwrap_or_else(|_| "stdio".into());
+    println!("Transport:       {transport}");
+
+    Ok(())
 }

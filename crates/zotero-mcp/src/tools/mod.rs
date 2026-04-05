@@ -23,6 +23,37 @@ use serde_json::{json, Value};
 use crate::protocol::{ToolCallResult, ToolDefinition};
 use crate::server::ServerContext;
 
+// ---------------------------------------------------------------------------
+// Parameter extraction helpers — reduce boilerplate in tool handlers.
+// ---------------------------------------------------------------------------
+
+/// Extract a required string parameter, or return a ToolCallResult error.
+pub fn required_str<'a>(args: &'a Value, key: &str) -> Result<&'a str, ToolCallResult> {
+    args.get(key)
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolCallResult::error(format!("Missing required parameter: {key}")))
+}
+
+/// Extract an optional string parameter.
+pub fn optional_str<'a>(args: &'a Value, key: &str) -> Option<&'a str> {
+    args.get(key).and_then(|v| v.as_str())
+}
+
+/// Extract an optional u64 parameter with a default value.
+pub fn optional_u64(args: &Value, key: &str, default: u64) -> u64 {
+    args.get(key).and_then(|v| v.as_u64()).unwrap_or(default)
+}
+
+/// Check if write tools are enabled. Returns error if not.
+pub fn check_writes_enabled(ctx: &ServerContext) -> Result<(), ToolCallResult> {
+    if !ctx.config.writes_enabled {
+        return Err(ToolCallResult::error(
+            "Write tools disabled. Set ZOTERO_MCP_ENABLE_WRITES=true to enable.".into(),
+        ));
+    }
+    Ok(())
+}
+
 /// Build the complete tool catalog for `tools/list`.
 ///
 /// Each tool definition includes its name, description, and JSON Schema
@@ -330,7 +361,7 @@ mod tests {
                 zotero_library_id: "1".into(),
                 zotero_library_type: "user".into(),
                 bbt_url: "http://localhost:23119".into(),
-                log_level: crate::config::LogLevel::Quiet,
+                log_level: crate::config::LogLevel::Quiet, writes_enabled: false,
             },
         };
         let result = handle_tool_call("nonexistent", &json!({}), &ctx);
