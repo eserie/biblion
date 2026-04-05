@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-Please email **emmanuel@serie.dev** with:
+Please email **security@biblion.dev** with:
 
 1. Description of the vulnerability
 2. Steps to reproduce

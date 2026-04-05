@@ -9,7 +9,7 @@ repository = "https://github.com/eserie/biblion"
 readme = "../../README.md"
 keywords = ["zotero", "mcp", "model-context-protocol", "sqlite", "bibliography"]
 categories = ["command-line-utilities", "database"]
-authors = ["Emmanuel Serie <emmanuel@epinoia.io>"]
+authors = ["Emmanuel Serie <emmanuel@biblion.dev>"]
 
 [dependencies]
 paper-resolver = { version = "0.1.0", path = "../paper-resolver" }
