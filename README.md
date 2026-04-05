@@ -1,6 +1,7 @@
 # biblion
 
 [![CI](https://github.com/eserie/biblion/actions/workflows/ci.yml/badge.svg)](https://github.com/eserie/biblion/actions/workflows/ci.yml)
+[![Crates.io](https://img.shields.io/crates/v/biblion)](https://crates.io/crates/biblion)
 [![codecov](https://codecov.io/gh/eserie/biblion/graph/badge.svg)](https://codecov.io/gh/eserie/biblion)
 [![Rust](https://img.shields.io/badge/rust-1.85+-orange?logo=rust)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -27,13 +28,15 @@ You ask Claude "find me the BibTeX for that mutation testing paper" and it searc
 **1. Install**
 
 ```bash
-# From source
-cargo install --git https://github.com/eserie/biblion.git biblion
+cargo install biblion
+```
 
-# Or clone and build
+Or from source:
+
+```bash
 git clone https://github.com/eserie/biblion.git
 cd biblion
-just install    # or: cargo build --release && cp target/release/biblion ~/.local/bin/
+just install
 ```
 
 > Make sure `~/.local/bin` (or `~/.cargo/bin`) is in your `PATH`.
