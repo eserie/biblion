@@ -5,3 +5,19 @@ target/
 *.sqlite-shm
 mutants.out/
 mutants.out.old/
+
+# Secrets — prophylactic (leak-corpus K01-K13, M02, S02)
+.env.*
+*.env
+.anthropic/
+.claude/credentials
+**/credentials.json
+**/*-credentials*
+*.pem
+*.key
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+.aws/
+.gcp/
