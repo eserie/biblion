@@ -7,7 +7,12 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/protocol-MCP_2024--11--05-purple)](https://modelcontextprotocol.io)
 
-**Your library, legible to every intelligence.**
+**A working Zotero ↔ MCP bridge. Rust, MIT. Frozen at v0.2.1.**
+
+This version is left as-is for the curious. No new features planned;
+security-class fixes only, best-effort. If you need this to evolve,
+fork it — the MIT license is generous on purpose. See
+[`MAINTENANCE.md`](MAINTENANCE.md) for the maintenance contract.
 
 An MCP server that connects your Zotero library to Claude and other LLMs. Search papers, export BibTeX, generate bibliographies, and find open-access PDFs — all from your AI assistant.
 

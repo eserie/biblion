@@ -1,6 +1,6 @@
 [package]
 name = "biblion"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 rust-version = "1.85"
 description = "High-performance MCP server that gives LLMs sub-millisecond access to your Zotero library"
@@ -12,7 +12,7 @@ categories = ["command-line-utilities", "database"]
 authors = ["Emmanuel Serie <emmanuel@biblion.dev>"]
 
 [dependencies]
-paper-resolver = { version = "0.2.0", path = "../paper-resolver" }
+paper-resolver = { version = "0.2.1", path = "../paper-resolver" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"
